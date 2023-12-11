@@ -75,13 +75,14 @@ contract Pool {
         returns (uint256 lp)
     {
         uint256 w = get_w();
+        uint256 dw = W - w;
         uint256 x0 = b0;
         uint256 x1 = b1;
 
-        uint256 v20 = Math.calc_v2(x0 * n0, x1 * n1, w);
+        uint256 v20 = Math.calc_v2(x0 * n0, x1 * n1, w, dw);
         x0 += d0;
         x1 += d1;
-        uint256 v21 = Math.calc_v2(x0 * n0, x1 * n1, w);
+        uint256 v21 = Math.calc_v2(x0 * n0, x1 * n1, w, dw);
 
         // TODO: imbalance fee? or require x0 = x1
         b0 = x0;
@@ -122,11 +123,12 @@ contract Pool {
 
     function swap(uint256 dx, uint256 dy, bool zero_for_one) external {
         uint256 w = get_w();
+        uint256 dw = W - w;
 
         uint256 x0 = b0;
         uint256 x1 = b1;
 
-        uint256 v20 = Math.calc_v2(x0 * n0, x1 * n1, w);
+        uint256 v20 = Math.calc_v2(x0 * n0, x1 * n1, w, dw);
         if (zero_for_one) {
             x0 += dx;
             x1 -= dy;
@@ -134,7 +136,7 @@ contract Pool {
             x0 -= dy;
             x1 += dx;
         }
-        uint256 v21 = Math.calc_v2(x0 * n0, x1 * n1, w);
+        uint256 v21 = Math.calc_v2(x0 * n0, x1 * n1, w, dw);
 
         require(v21 >= v20, "v");
 

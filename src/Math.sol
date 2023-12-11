@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-uint256 constant W = 1e6;
+uint256 constant W = 1e5;
 uint256 constant U = 1e18;
+int256 constant I = 1e18;
 
 library Math {
     function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
@@ -13,73 +14,73 @@ library Math {
         z = x >= y ? x : y;
     }
 
-    // function sqrt(uint256 y) internal pure returns (uint256 z) {
-    //     if (y > 3) {
-    //         z = y;
-    //         uint256 x = y / 2 + 1;
-    //         while (x < z) {
-    //             z = x;
-    //             x = (y / x + x) / 2;
-    //         }
-    //     } else if (y != 0) {
-    //         z = 1;
-    //     }
-    //     // else z = 0 (default value)
-    // }
+    function sqrt(uint256 y) internal pure returns (uint256 z) {
+        if (y > 3) {
+            z = y;
+            uint256 x = y / 2 + 1;
+            while (x < z) {
+                z = x;
+                x = (y / x + x) / 2;
+            }
+        } else if (y != 0) {
+            z = 1;
+        }
+        // else z = 0 (default value)
+    }
 
     /// @dev Returns the square root of `x`.
-    function sqrt(uint256 x) internal pure returns (uint256 z) {
-        /// @solidity memory-safe-assembly
-        assembly {
-            // `floor(sqrt(2**15)) = 181`. `sqrt(2**15) - 181 = 2.84`.
-            z := 181 // The "correct" value is 1, but this saves a multiplication later.
+    // function sqrt(uint256 x) internal pure returns (uint256 z) {
+    //     /// @solidity memory-safe-assembly
+    //     assembly {
+    //         // `floor(sqrt(2**15)) = 181`. `sqrt(2**15) - 181 = 2.84`.
+    //         z := 181 // The "correct" value is 1, but this saves a multiplication later.
 
-            // This segment is to get a reasonable initial estimate for the Babylonian method. With a bad
-            // start, the correct # of bits increases ~linearly each iteration instead of ~quadratically.
+    //         // This segment is to get a reasonable initial estimate for the Babylonian method. With a bad
+    //         // start, the correct # of bits increases ~linearly each iteration instead of ~quadratically.
 
-            // Let `y = x / 2**r`. We check `y >= 2**(k + 8)`
-            // but shift right by `k` bits to ensure that if `x >= 256`, then `y >= 256`.
-            let r := shl(7, lt(0xffffffffffffffffffffffffffffffffff, x))
-            r := or(r, shl(6, lt(0xffffffffffffffffff, shr(r, x))))
-            r := or(r, shl(5, lt(0xffffffffff, shr(r, x))))
-            r := or(r, shl(4, lt(0xffffff, shr(r, x))))
-            z := shl(shr(1, r), z)
+    //         // Let `y = x / 2**r`. We check `y >= 2**(k + 8)`
+    //         // but shift right by `k` bits to ensure that if `x >= 256`, then `y >= 256`.
+    //         let r := shl(7, lt(0xffffffffffffffffffffffffffffffffff, x))
+    //         r := or(r, shl(6, lt(0xffffffffffffffffff, shr(r, x))))
+    //         r := or(r, shl(5, lt(0xffffffffff, shr(r, x))))
+    //         r := or(r, shl(4, lt(0xffffff, shr(r, x))))
+    //         z := shl(shr(1, r), z)
 
-            // Goal was to get `z*z*y` within a small factor of `x`. More iterations could
-            // get y in a tighter range. Currently, we will have y in `[256, 256*(2**16))`.
-            // We ensured `y >= 256` so that the relative difference between `y` and `y+1` is small.
-            // That's not possible if `x < 256` but we can just verify those cases exhaustively.
+    //         // Goal was to get `z*z*y` within a small factor of `x`. More iterations could
+    //         // get y in a tighter range. Currently, we will have y in `[256, 256*(2**16))`.
+    //         // We ensured `y >= 256` so that the relative difference between `y` and `y+1` is small.
+    //         // That's not possible if `x < 256` but we can just verify those cases exhaustively.
 
-            // Now, `z*z*y <= x < z*z*(y+1)`, and `y <= 2**(16+8)`, and either `y >= 256`, or `x < 256`.
-            // Correctness can be checked exhaustively for `x < 256`, so we assume `y >= 256`.
-            // Then `z*sqrt(y)` is within `sqrt(257)/sqrt(256)` of `sqrt(x)`, or about 20bps.
+    //         // Now, `z*z*y <= x < z*z*(y+1)`, and `y <= 2**(16+8)`, and either `y >= 256`, or `x < 256`.
+    //         // Correctness can be checked exhaustively for `x < 256`, so we assume `y >= 256`.
+    //         // Then `z*sqrt(y)` is within `sqrt(257)/sqrt(256)` of `sqrt(x)`, or about 20bps.
 
-            // For `s` in the range `[1/256, 256]`, the estimate `f(s) = (181/1024) * (s+1)`
-            // is in the range `(1/2.84 * sqrt(s), 2.84 * sqrt(s))`,
-            // with largest error when `s = 1` and when `s = 256` or `1/256`.
+    //         // For `s` in the range `[1/256, 256]`, the estimate `f(s) = (181/1024) * (s+1)`
+    //         // is in the range `(1/2.84 * sqrt(s), 2.84 * sqrt(s))`,
+    //         // with largest error when `s = 1` and when `s = 256` or `1/256`.
 
-            // Since `y` is in `[256, 256*(2**16))`, let `a = y/65536`, so that `a` is in `[1/256, 256)`.
-            // Then we can estimate `sqrt(y)` using
-            // `sqrt(65536) * 181/1024 * (a + 1) = 181/4 * (y + 65536)/65536 = 181 * (y + 65536)/2**18`.
+    //         // Since `y` is in `[256, 256*(2**16))`, let `a = y/65536`, so that `a` is in `[1/256, 256)`.
+    //         // Then we can estimate `sqrt(y)` using
+    //         // `sqrt(65536) * 181/1024 * (a + 1) = 181/4 * (y + 65536)/65536 = 181 * (y + 65536)/2**18`.
 
-            // There is no overflow risk here since `y < 2**136` after the first branch above.
-            z := shr(18, mul(z, add(shr(r, x), 65536))) // A `mul()` is saved from starting `z` at 181.
+    //         // There is no overflow risk here since `y < 2**136` after the first branch above.
+    //         z := shr(18, mul(z, add(shr(r, x), 65536))) // A `mul()` is saved from starting `z` at 181.
 
-            // Given the worst case multiplicative error of 2.84 above, 7 iterations should be enough.
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
-            z := shr(1, add(z, div(x, z)))
+    //         // Given the worst case multiplicative error of 2.84 above, 7 iterations should be enough.
+    //         z := shr(1, add(z, div(x, z)))
+    //         z := shr(1, add(z, div(x, z)))
+    //         z := shr(1, add(z, div(x, z)))
+    //         z := shr(1, add(z, div(x, z)))
+    //         z := shr(1, add(z, div(x, z)))
+    //         z := shr(1, add(z, div(x, z)))
+    //         z := shr(1, add(z, div(x, z)))
 
-            // If `x+1` is a perfect square, the Babylonian method cycles between
-            // `floor(sqrt(x))` and `ceil(sqrt(x))`. This statement ensures we return floor.
-            // See: https://en.wikipedia.org/wiki/Integer_square_root#Using_only_integer_division
-            z := sub(z, lt(div(x, z), z))
-        }
-    }
+    //         // If `x+1` is a perfect square, the Babylonian method cycles between
+    //         // `floor(sqrt(x))` and `ceil(sqrt(x))`. This statement ensures we return floor.
+    //         // See: https://en.wikipedia.org/wiki/Integer_square_root#Using_only_integer_division
+    //         z := sub(z, lt(div(x, z), z))
+    //     }
+    // }
 
     /// @dev Calculates `floor(a * b / d)` with full precision.
     /// Throws if result overflows a uint256 or when `d` is zero.
@@ -178,10 +179,10 @@ library Math {
         return w1;
     }
 
-    // xy(w + 4(1-w))(x + y)^2 = v^2(w(x+y)^2 + 4(1-w)4xy)
-    // w = 1 -> xy = v^2
-    // w = 0 -> (x + y)^2 = (2v)^2
-    function calc_v2(uint256 x, uint256 y, uint256 w)
+    // xy((1-w) + 4w)(x+y)^2 = v^2((1-w)(x+y)^2 + 4w4xy)
+    // w = 0 -> xy = v^2
+    // w = 1 -> (x+y)^2 = (2v)^2
+    function calc_v2(uint256 x, uint256 y, uint256 w, uint256 dw)
         internal
         pure
         returns (uint256 v2)
@@ -190,19 +191,16 @@ library Math {
             return 0;
         }
         if (w == 0) {
-            return (x + y) ** 2 / 4;
+            return x * y;
         }
         if (w == W) {
-            return x * y;
+            return (x + y) ** 2 / 4;
         }
 
         uint256 p = x * y;
         uint256 s2 = (x + y) ** 2;
-        uint256 dw = W - w;
-        // WU^4 / WU^2
-        // v2 = p * (w + 4 * dw) * s2 / (w * s2 + 16 * dw * p);
-        // TODO: use muldiv?
-        v2 = mul_div(p * (w + 4 * dw), s2, w * s2 + 16 * dw * p);
+        // v2 = p*(dw + 4*w)*s2 / (dw*s2 + 16*w*p)
+        v2 = mul_div(p * (dw + 4 * w), s2, dw * s2 + 16 * w * p);
     }
 
     function f(int256 x, int256 y, int256 w, int256 dw, int256 v2)
@@ -212,17 +210,28 @@ library Math {
     {
         int256 p = x * y;
         int256 s2 = (x + y) ** 2;
-        int256 l = p * (w + 4 * dw) * s2;
-        int256 r = v2 * (w * s2 + 16 * dw * p);
-        z = l - r;
+        int256 l = s2 > 0
+            ? int256(
+                mul_div(
+                    uint256(p * (dw + 4 * w)),
+                    uint256(s2),
+                    uint256(dw * s2 + 16 * w * p)
+                )
+            )
+            : int256(0);
+        z = l - v2;
     }
 
-    function calc_y(int256 x, int256 y0, int256 y1, int256 w, int256 v2)
-        internal
-        pure
-        returns (int256 y)
-    {
-        int256 dw = int256(W) - w;
+    // x = token in
+    // y = token out
+    function calc_y(
+        int256 x,
+        int256 y0,
+        int256 y1,
+        int256 w,
+        int256 dw,
+        int256 v2
+    ) internal pure returns (int256 y) {
         int256 f0 = f(x, y0, w, dw, v2);
         if (f0 == 0) {
             return y0;
@@ -239,7 +248,6 @@ library Math {
             y1 = y2;
             f0 = f1;
         }
-        revert("f != 0");
     }
 
     // TODO: newton's method
