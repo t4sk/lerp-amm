@@ -5,6 +5,9 @@ import {IPool} from "./interfaces/IPool.sol";
 import "./Math.sol";
 
 contract Aux {
+    // TODO: add liquidity
+    // TODO: remove liquidity
+    // TODO: remove liquidity one coin
     function swap(address pool, uint256 dx, uint256 min_dy, bool zero_for_one)
         external
         returns (uint256 dy)
@@ -24,28 +27,26 @@ contract Aux {
         uint256 y1 = 0;
         if (zero_for_one) {
             y0 = x1;
-            y1 = uint256(
-                Math.calc_y(
-                    int256(x0 + dx * n0),
-                    int256(x1),
-                    int256(x1 - min_dy * n1),
-                    int256(w),
-                    int256(dw),
-                    int256(v2)
-                )
+            (int256 iy,) = Math.calc_y(
+                int256(x0 + dx * n0),
+                int256(x1),
+                int256(x1 - min_dy * n1),
+                int256(w),
+                int256(dw),
+                int256(v2)
             );
+            y1 = uint256(iy);
         } else {
             y0 = x0;
-            y1 = uint256(
-                Math.calc_y(
-                    int256(x1 + dx * n1),
-                    int256(x0),
-                    int256(x0 - min_dy * n0),
-                    int256(w),
-                    int256(dw),
-                    int256(v2)
-                )
+            (int256 iy,) = Math.calc_y(
+                int256(x1 + dx * n1),
+                int256(x0),
+                int256(x0 - min_dy * n0),
+                int256(w),
+                int256(dw),
+                int256(v2)
             );
+            y1 = uint256(iy);
         }
         dy = y0 - y1;
 

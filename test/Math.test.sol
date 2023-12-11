@@ -28,20 +28,45 @@ contract MathTest is Test {
         uint256 min_dy = 99 * 1e18;
 
         uint256 v2 = Math.calc_v2(x, y0, w, dw);
-
-        uint256 y1 = uint256(
-            Math.calc_y(
-                int256(x + dx),
-                int256(y0),
-                int256(y0 - min_dy),
-                int256(w),
-                int256(dw),
-                int256(v2)
-            )
+        (int256 iy, uint256 i) = Math.calc_y(
+            int256(x + dx),
+            int256(y0),
+            int256(y0 - min_dy),
+            int256(w),
+            int256(dw),
+            int256(v2)
         );
+        uint256 y1 = uint256(iy);
 
         uint256 dy = y0 - y1;
-        console.log("dy", dy);
+        assertGe(dy, min_dy);
+    }
+
+    function test_calc_y_fuzz(uint256 x, uint256 y0, uint256 dx) public {
+        x = bound(x, 1e6, 1e32);
+        y0 = bound(y0, 1e6, 1e32);
+        uint256 w = W * 70 / 100;
+        uint256 dw = W - w;
+
+        // dx = bound(dx, 1e6, 1e27);
+        dx = 1e6;
+        uint256 min_dy = 1;
+
+        uint256 v2 = Math.calc_v2(x, y0, w, dw);
+        (int256 iy, uint256 i) = Math.calc_y(
+            int256(x + dx),
+            int256(y0),
+            int256(y0 - min_dy),
+            int256(w),
+            int256(dw),
+            int256(v2)
+        );
+        uint256 y1 = uint256(iy);
+
+        uint256 dy = y0 - y1;
+        console.log("dy", dy, i);
+        revert();
+        // assertGe(dy, min_dy);
     }
     // test f
     // test v2

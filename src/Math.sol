@@ -222,6 +222,7 @@ library Math {
         z = l - v2;
     }
 
+    // Secant method
     // x = token in
     // y = token out
     function calc_y(
@@ -231,23 +232,27 @@ library Math {
         int256 w,
         int256 dw,
         int256 v2
-    ) internal pure returns (int256 y) {
+    ) internal pure returns (int256 y, uint256 i) {
         int256 f0 = f(x, y0, w, dw, v2);
         if (f0 == 0) {
-            return y0;
+            return (y0, 0);
         }
         int256 f1 = 0;
         int256 y2 = 0;
-        while (f0 != 0) {
+        while (f0 != 0 && i < 255) {
             f1 = f(x, y1, w, dw, v2);
             if (f1 == f0) {
-                return y1;
+                return (y1, i);
             }
             y2 = y1 - f1 * (y1 - y0) / (f1 - f0);
             y0 = y1;
             y1 = y2;
             f0 = f1;
+            unchecked {
+                ++i;
+            }
         }
+        revert("f != 0");
     }
 
     // TODO: newton's method

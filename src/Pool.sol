@@ -122,6 +122,7 @@ contract Pool {
     }
 
     function swap(uint256 dx, uint256 dy, bool zero_for_one) external {
+        // TODO: input validation
         uint256 w = get_w();
         uint256 dw = W - w;
 
