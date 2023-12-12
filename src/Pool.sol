@@ -76,17 +76,17 @@ contract Pool {
     {
         uint256 w = get_w();
         uint256 dw = W - w;
-        uint256 x0 = b0;
-        uint256 x1 = b1;
+        uint256 c0 = b0;
+        uint256 c1 = b1;
 
-        uint256 v20 = Math.calc_v2(x0 * n0, x1 * n1, w, dw);
-        x0 += d0;
-        x1 += d1;
-        uint256 v21 = Math.calc_v2(x0 * n0, x1 * n1, w, dw);
+        uint256 v20 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
+        c0 += d0;
+        c1 += d1;
+        uint256 v21 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
 
-        // TODO: imbalance fee? or require x0 = x1
-        b0 = x0;
-        b1 = x1;
+        // TODO: imbalance fee? or require c0 = c1
+        b0 = c0;
+        b1 = c1;
 
         if (total_supply == 0) {
             lp = Math.sqrt(v21);
@@ -103,20 +103,20 @@ contract Pool {
         external
         returns (uint256 d0, uint256 d1)
     {
-        uint256 x0 = b0;
-        uint256 x1 = b1;
+        uint256 c0 = b0;
+        uint256 c1 = b1;
 
-        d0 = x0 * lp / total_supply;
-        d1 = x1 * lp / total_supply;
+        d0 = c0 * lp / total_supply;
+        d1 = c1 * lp / total_supply;
 
         require(d0 >= min_d0, "d0 < min");
         require(d1 >= min_d1, "d1 < min");
 
-        x0 -= d0;
-        x1 -= d1;
+        c0 -= d0;
+        c1 -= d1;
 
-        b0 = x0;
-        b1 = x1;
+        b0 = c0;
+        b1 = c1;
 
         _burn(msg.sender, lp);
     }
@@ -126,22 +126,22 @@ contract Pool {
         uint256 w = get_w();
         uint256 dw = W - w;
 
-        uint256 x0 = b0;
-        uint256 x1 = b1;
+        uint256 c0 = b0;
+        uint256 c1 = b1;
 
-        uint256 v20 = Math.calc_v2(x0 * n0, x1 * n1, w, dw);
+        uint256 v20 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
         if (zero_for_one) {
-            x0 += dx;
-            x1 -= dy;
+            c0 += dx;
+            c1 -= dy;
         } else {
-            x0 -= dy;
-            x1 += dx;
+            c0 -= dy;
+            c1 += dx;
         }
-        uint256 v21 = Math.calc_v2(x0 * n0, x1 * n1, w, dw);
+        uint256 v21 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
 
         require(v21 >= v20, "v");
 
-        b0 = x0;
-        b1 = x1;
+        b0 = c0;
+        b1 = c1;
     }
 }
