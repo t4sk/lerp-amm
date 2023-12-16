@@ -5,9 +5,10 @@ import {IPool} from "./interfaces/IPool.sol";
 import "./Math.sol";
 
 contract Aux {
-    // TODO: add liquidity
+    // TODO: add liquidity imbalanced
     // TODO: remove liquidity
     // TODO: remove liquidity one coin
+
     function swap(address pool, uint256 dx, uint256 min_dy, bool zero_for_one)
         external
         returns (uint256 dy)
@@ -22,6 +23,7 @@ contract Aux {
         uint256 x0 = b0 * n0;
         uint256 x1 = b1 * n1;
 
+        // TODO: calc fee here?
         uint256 v2 = Math.calc_v2(x0, x1, w, dw);
         uint256 y0 = 0;
         uint256 y1 = 0;

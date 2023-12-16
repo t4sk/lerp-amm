@@ -21,13 +21,15 @@ contract Pool {
     uint256 public b0;
     uint256 public b1;
 
+    // TODO: dynamic fee
+    uint256 public fee;
+
     uint256 public total_supply;
     mapping(address => uint256) public balance_of;
 
-    // TODO: fee
-
-    constructor(uint256 w) {
+    constructor(uint256 w, uint256 f) {
         require(w <= W, "w > max");
+        require(f <= W, "fee > max");
         coin0 = address(1);
         coin1 = address(2);
         n0 = 1;
@@ -36,6 +38,7 @@ contract Pool {
         w1 = w;
         w0_time = block.timestamp;
         w1_time = block.timestamp;
+        fee = f;
     }
 
     function _mint(address dst, uint256 amount) private {
@@ -93,6 +96,7 @@ contract Pool {
         } else {
             uint256 v0 = Math.sqrt(v20);
             uint256 v1 = Math.sqrt(v21);
+            // TODO: invariant test v1 >= v0
             lp = total_supply * (v1 - v0) / v0;
         }
         require(lp >= min_lp, "lp < min");
@@ -103,6 +107,7 @@ contract Pool {
         external
         returns (uint256 d0, uint256 d1)
     {
+        // TODO: use token balance?
         uint256 c0 = b0;
         uint256 c1 = b1;
 
@@ -128,21 +133,25 @@ contract Pool {
 
         uint256 c0 = b0;
         uint256 c1 = b1;
+        uint256 fee0 = 0;
+        uint256 fee1 = 0;
 
-        // TODO: fee
         uint256 v20 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
         if (zero_for_one) {
+            fee1 = dy * fee / W;
             c0 += dx;
-            c1 -= dy;
+            c1 -= (dy - fee1);
         } else {
-            c0 -= dy;
+            fee0 = dy * fee / W;
+            c0 -= (dy - fee0);
             c1 += dx;
         }
         uint256 v21 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
 
         require(v21 >= v20, "v");
 
-        b0 = c0;
-        b1 = c1;
+        b0 = c0 + fee0;
+        b1 = c1 + fee1;
+        // TODO: require balance of coin 0 and 1 >= b0 and b1
     }
 }

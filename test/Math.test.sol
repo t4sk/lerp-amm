@@ -49,6 +49,7 @@ contract MathTest is Test {
     function test_calc_y_fuzz(uint256 x, uint256 y0, uint256 dx) public {
         x = bound(x, 1e6, 1e32);
         y0 = bound(y0, 1e6, 1e32);
+
         // y0 = x;
         uint256 w = W * 70 / 100;
         uint256 dw = W - w;
