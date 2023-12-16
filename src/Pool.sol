@@ -129,6 +129,7 @@ contract Pool {
         uint256 c0 = b0;
         uint256 c1 = b1;
 
+        // TODO: fee
         uint256 v20 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
         if (zero_for_one) {
             c0 += dx;

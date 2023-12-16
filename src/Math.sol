@@ -10,8 +10,20 @@ library Math {
         z = x <= y ? x : y;
     }
 
+    function min(int256 x, int256 y) internal pure returns (int256 z) {
+        z = x <= y ? x : y;
+    }
+
     function max(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x >= y ? x : y;
+    }
+
+    function max(int256 x, int256 y) internal pure returns (int256 z) {
+        z = x >= y ? x : y;
+    }
+
+    function abs(int256 x) internal pure returns (uint256) {
+        return x >= 0 ? uint256(x) : uint256(-x);
     }
 
     function sqrt(uint256 y) internal pure returns (uint256 z) {
@@ -200,6 +212,7 @@ library Math {
         uint256 p = x * y;
         uint256 s2 = (x + y) ** 2;
         // v2 = p*(dw + 4*w)*s2 / (dw*s2 + 16*w*p)
+        // WU^2
         v2 = mul_div(p * (dw + 4 * w), s2, dw * s2 + 16 * w * p);
     }
 
@@ -219,7 +232,7 @@ library Math {
                 )
             )
             : int256(0);
-        z = l - v2;
+        z = (l - v2) / I;
     }
 
     // Secant method
@@ -239,12 +252,12 @@ library Math {
         }
         int256 f1 = 0;
         int256 y2 = 0;
-        while (f0 != 0 && i < 255) {
+        while (i < 255) {
             f1 = f(x, y1, w, dw, v2);
-            if (f1 == f0) {
+            if (f1 == 0 || f1 == f0) {
                 return (y1, i);
             }
-            y2 = y1 - f1 * (y1 - y0) / (f1 - f0);
+            y2 = Math.max(y1 - f1 * (y1 - y0) / (f1 - f0), 0);
             y0 = y1;
             y1 = y2;
             f0 = f1;
