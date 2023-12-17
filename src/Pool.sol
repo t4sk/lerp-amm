@@ -13,6 +13,11 @@ contract Pool {
         uint32 w1_time;
     }
 
+    struct Balances {
+        uint128 b0;
+        uint128 b1;
+    }
+
     address public immutable coin0;
     address public immutable coin1;
     // Multiplier to normalize coin 0 and coin 1 to 18 decimals
@@ -22,11 +27,8 @@ contract Pool {
     uint32 private constant MIN_W_DT = 24 * 3600;
 
     bool private locked;
-    Weight public weight;
-
-    // TODO: single slot?
-    uint256 public balance0;
-    uint256 public balance1;
+    Weight private weight;
+    Balances private balances;
 
     // TODO: dynamic fee
     uint256 public fee;
@@ -81,20 +83,32 @@ contract Pool {
     // TODO: auth
     function set_w(uint64 w1, uint32 w1_time) external {
         require(w1 <= W, "w > max");
-        require(w1_time >= block.timestamp + MIN_W_DT, "w1 time < min");
-        uint256 w = get_w();
-        weight.w0 = uint64(w);
+        require(w1_time >= uint32(block.timestamp) + MIN_W_DT, "w1 time < min");
+        uint64 w = uint64(get_w());
+        weight.w0 = w;
         weight.w1 = w1;
         weight.w0_time = uint32(block.timestamp);
         weight.w1_time = w1_time;
     }
 
     function stop_w() external {
-        uint256 w = get_w();
-        weight.w0 = uint64(w);
-        weight.w1 = uint64(w);
+        uint64 w = uint64(get_w());
+        weight.w0 = w;
+        weight.w1 = w;
         weight.w0_time = uint32(block.timestamp);
         weight.w1_time = uint32(block.timestamp);
+    }
+
+    function get_balances() public view returns (uint256 b0, uint256 b1) {
+        Balances memory bals = balances;
+        b0 = bals.b0;
+        b1 = bals.b1;
+    }
+
+    function _set_balances(uint256 b0, uint256 b1) private {
+        Balances storage bals = balances;
+        bals.b0 = uint128(b0);
+        bals.b1 = uint128(b1);
     }
 
     function add_liquidity(uint256 d0, uint256 d1, uint256 min_lp)
@@ -106,8 +120,7 @@ contract Pool {
         uint256 w = get_w();
         uint256 dw = W - w;
         // Old balances
-        uint256 b0 = balance0;
-        uint256 b1 = balance1;
+        (uint256 b0, uint256 b1) = get_balances();
         // New balances
         uint256 c0 = b0;
         uint256 c1 = b1;
@@ -139,8 +152,7 @@ contract Pool {
             lp = v1;
         }
 
-        balance0 = c0;
-        balance1 = c1;
+        _set_balances(c0, c1);
 
         require(lp >= min_lp, "lp < min");
         _mint(msg.sender, lp);
@@ -153,21 +165,18 @@ contract Pool {
     {
         // TODO: input validation
         // TODO: use token balance?
-        uint256 c0 = balance0;
-        uint256 c1 = balance1;
+        (uint256 b0, uint256 b1) = get_balances();
 
-        d0 = c0 * lp / total_supply;
-        d1 = c1 * lp / total_supply;
+        d0 = b0 * lp / total_supply;
+        d1 = b1 * lp / total_supply;
 
         require(d0 >= min_d0, "d0 < min");
         require(d1 >= min_d1, "d1 < min");
 
-        c0 -= d0;
-        c1 -= d1;
+        b0 -= d0;
+        b1 -= d1;
 
-        balance0 = c0;
-        balance1 = c1;
-
+        _set_balances(b0, b1);
         _burn(msg.sender, lp);
     }
 
@@ -177,27 +186,25 @@ contract Pool {
         uint256 w = get_w();
         uint256 dw = W - w;
 
-        uint256 c0 = balance0;
-        uint256 c1 = balance1;
+        (uint256 b0, uint256 b1) = get_balances();
         uint256 fee0 = 0;
         uint256 fee1 = 0;
 
-        uint256 v20 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
+        uint256 v20 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
         if (zero_for_one) {
             fee1 = dy * fee / W;
-            c0 += dx;
-            c1 -= (dy - fee1);
+            b0 += dx;
+            b1 -= (dy - fee1);
         } else {
             fee0 = dy * fee / W;
-            c0 -= (dy - fee0);
-            c1 += dx;
+            b0 -= (dy - fee0);
+            b1 += dx;
         }
-        uint256 v21 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
+        uint256 v21 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
 
         require(v21 >= v20, "v");
 
-        balance0 = c0 + fee0;
-        balance1 = c1 + fee1;
+        _set_balances(b0 + fee0, b1 + fee1);
         // TODO: require balance of coin 0 and 1 >= b0 and b1
     }
 }
