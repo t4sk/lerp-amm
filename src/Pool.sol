@@ -6,18 +6,23 @@ import "./Math.sol";
 // TODO: vyper
 // TODO: erc20
 contract Pool {
+    struct Weight {
+        uint64 w0;
+        uint64 w1;
+        uint32 w0_time;
+        uint32 w1_time;
+    }
+
     address public immutable coin0;
     address public immutable coin1;
-
+    // Multiplier to normalize coin 0 and coin 1 to 18 decimals
     uint256 public immutable n0;
     uint256 public immutable n1;
 
-    uint256 private constant MIN_W_DT = 24 * 3600;
-    // TODO: single slot
-    uint256 public w0;
-    uint256 public w1;
-    uint256 public w0_time;
-    uint256 public w1_time;
+    uint32 private constant MIN_W_DT = 24 * 3600;
+
+    bool private locked;
+    Weight public weight;
 
     // TODO: single slot?
     uint256 public balance0;
@@ -29,17 +34,26 @@ contract Pool {
     uint256 public total_supply;
     mapping(address => uint256) public balance_of;
 
-    constructor(uint256 w, uint256 f) {
+    modifier lock() {
+        require(!locked, "locked");
+        locked = true;
+        _;
+        locked = false;
+    }
+
+    constructor(uint64 w, uint256 f) {
         require(w <= W, "w > max");
         require(f <= W, "fee > max");
         coin0 = address(1);
         coin1 = address(2);
         n0 = 1;
         n1 = 10 ** 12;
-        w0 = w;
-        w1 = w;
-        w0_time = block.timestamp;
-        w1_time = block.timestamp;
+        weight = Weight({
+            w0: w,
+            w1: w,
+            w0_time: uint32(block.timestamp),
+            w1_time: uint32(block.timestamp)
+        });
         fee = f;
     }
 
@@ -53,38 +67,48 @@ contract Pool {
         total_supply -= amount;
     }
 
-    function get_w() public view returns (uint256 w) {
-        w = Math.calc_w(w0, w1, w0_time, w1_time, block.timestamp);
+    function get_w() public view returns (uint256) {
+        Weight memory w = weight;
+        return Math.calc_w(
+            uint256(w.w0),
+            uint256(w.w1),
+            uint256(w.w0_time),
+            uint256(w.w1_time),
+            block.timestamp
+        );
     }
 
     // TODO: auth
-    function set_w(uint256 _w1, uint256 _w1_time) external {
-        require(_w1 <= W, "w > max");
-        require(_w1_time >= block.timestamp + MIN_W_DT, "w1 time < min");
+    function set_w(uint64 w1, uint32 w1_time) external {
+        require(w1 <= W, "w > max");
+        require(w1_time >= block.timestamp + MIN_W_DT, "w1 time < min");
         uint256 w = get_w();
-        w0 = w;
-        w1 = _w1;
-        w0_time = block.timestamp;
-        w1_time = _w1_time;
+        weight.w0 = uint64(w);
+        weight.w1 = w1;
+        weight.w0_time = uint32(block.timestamp);
+        weight.w1_time = w1_time;
     }
 
     function stop_w() external {
         uint256 w = get_w();
-        w0 = w;
-        w1 = w;
-        w0_time = block.timestamp;
-        w1_time = block.timestamp;
+        weight.w0 = uint64(w);
+        weight.w1 = uint64(w);
+        weight.w0_time = uint32(block.timestamp);
+        weight.w1_time = uint32(block.timestamp);
     }
 
     function add_liquidity(uint256 d0, uint256 d1, uint256 min_lp)
         external
+        lock
         returns (uint256 lp, uint256 fee0, uint256 fee1)
     {
         // TODO: input validation
         uint256 w = get_w();
         uint256 dw = W - w;
+        // Old balances
         uint256 b0 = balance0;
         uint256 b1 = balance1;
+        // New balances
         uint256 c0 = b0;
         uint256 c1 = b1;
 
@@ -101,7 +125,7 @@ contract Pool {
         uint256 v0 = Math.sqrt(v20);
         uint256 v1 = Math.sqrt(v21);
         if (s > 0) {
-            // TODO: require v0 > 0
+            // TODO: require v0 > 0?
             fee0 = Math.abs_diff(c0, b0 * v1 / v0) * fee / W;
             fee1 = Math.abs_diff(c1, b1 * v1 / v0) * fee / W;
             c0 -= fee0;
@@ -124,6 +148,7 @@ contract Pool {
 
     function remove_liquidity(uint256 lp, uint256 min_d0, uint256 min_d1)
         external
+        lock
         returns (uint256 d0, uint256 d1)
     {
         // TODO: input validation
@@ -146,7 +171,8 @@ contract Pool {
         _burn(msg.sender, lp);
     }
 
-    function swap(uint256 dx, uint256 dy, bool zero_for_one) external {
+    // TODO: return dy and fee?
+    function swap(uint256 dx, uint256 dy, bool zero_for_one) external lock {
         // TODO: input validation
         uint256 w = get_w();
         uint256 dw = W - w;
