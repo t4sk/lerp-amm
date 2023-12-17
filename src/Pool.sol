@@ -3,6 +3,8 @@ pragma solidity 0.8.20;
 
 import "./Math.sol";
 
+// TODO: vyper
+// TODO: erc20
 contract Pool {
     address public immutable coin0;
     address public immutable coin1;
@@ -18,8 +20,8 @@ contract Pool {
     uint256 public w1_time;
 
     // TODO: single slot?
-    uint256 public b0;
-    uint256 public b1;
+    uint256 public balance0;
+    uint256 public balance1;
 
     // TODO: dynamic fee
     uint256 public fee;
@@ -55,6 +57,7 @@ contract Pool {
         w = Math.calc_w(w0, w1, w0_time, w1_time, block.timestamp);
     }
 
+    // TODO: auth
     function set_w(uint256 _w1, uint256 _w1_time) external {
         require(_w1 <= W, "w > max");
         require(_w1_time >= block.timestamp + MIN_W_DT, "w1 time < min");
@@ -75,10 +78,13 @@ contract Pool {
 
     function add_liquidity(uint256 d0, uint256 d1, uint256 min_lp)
         external
-        returns (uint256 lp)
+        returns (uint256 lp, uint256 fee0, uint256 fee1)
     {
+        // TODO: input validation
         uint256 w = get_w();
         uint256 dw = W - w;
+        uint256 b0 = balance0;
+        uint256 b1 = balance1;
         uint256 c0 = b0;
         uint256 c1 = b1;
 
@@ -86,19 +92,32 @@ contract Pool {
         c0 += d0;
         c1 += d1;
         uint256 v21 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
+        require(v21 >= v20, "v21 < v20");
 
-        // TODO: imbalance fee? or require c0 = c1
-        b0 = c0;
-        b1 = c1;
-
-        if (total_supply == 0) {
-            lp = Math.sqrt(v21);
-        } else {
-            uint256 v0 = Math.sqrt(v20);
-            uint256 v1 = Math.sqrt(v21);
+        // TODO: imbalance fee?
+        // w = 0 -> xy = v^2
+        // w = 1 -> (x+y)^2 = (2v)^2
+        uint256 s = total_supply;
+        uint256 v0 = Math.sqrt(v20);
+        uint256 v1 = Math.sqrt(v21);
+        if (s > 0) {
+            // TODO: require v0 > 0
+            fee0 = Math.abs_diff(c0, b0 * v1 / v0) * fee / W;
+            fee1 = Math.abs_diff(c1, b1 * v1 / v0) * fee / W;
+            c0 -= fee0;
+            c1 -= fee1;
+            uint256 v22 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
+            uint256 v2 = Math.sqrt(v22);
             // TODO: invariant test v1 >= v0
-            lp = total_supply * (v1 - v0) / v0;
+            // TODO: invariant test v0 > 0
+            lp = s * (v2 - v0) / v0;
+        } else {
+            lp = v1;
         }
+
+        balance0 = c0;
+        balance1 = c1;
+
         require(lp >= min_lp, "lp < min");
         _mint(msg.sender, lp);
     }
@@ -107,9 +126,10 @@ contract Pool {
         external
         returns (uint256 d0, uint256 d1)
     {
+        // TODO: input validation
         // TODO: use token balance?
-        uint256 c0 = b0;
-        uint256 c1 = b1;
+        uint256 c0 = balance0;
+        uint256 c1 = balance1;
 
         d0 = c0 * lp / total_supply;
         d1 = c1 * lp / total_supply;
@@ -120,8 +140,8 @@ contract Pool {
         c0 -= d0;
         c1 -= d1;
 
-        b0 = c0;
-        b1 = c1;
+        balance0 = c0;
+        balance1 = c1;
 
         _burn(msg.sender, lp);
     }
@@ -131,8 +151,8 @@ contract Pool {
         uint256 w = get_w();
         uint256 dw = W - w;
 
-        uint256 c0 = b0;
-        uint256 c1 = b1;
+        uint256 c0 = balance0;
+        uint256 c1 = balance1;
         uint256 fee0 = 0;
         uint256 fee1 = 0;
 
@@ -150,8 +170,8 @@ contract Pool {
 
         require(v21 >= v20, "v");
 
-        b0 = c0 + fee0;
-        b1 = c1 + fee1;
+        balance0 = c0 + fee0;
+        balance1 = c1 + fee1;
         // TODO: require balance of coin 0 and 1 >= b0 and b1
     }
 }

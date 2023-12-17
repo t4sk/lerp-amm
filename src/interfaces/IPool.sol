@@ -4,8 +4,8 @@ pragma solidity 0.8.20;
 interface IPool {
     function n0() external view returns (uint256);
     function n1() external view returns (uint256);
-    function b0() external view returns (uint256);
-    function b1() external view returns (uint256);
+    function balance0() external view returns (uint256);
+    function balance1() external view returns (uint256);
     function get_w() external view returns (uint256 w);
     function add_liquidity(uint256 d0, uint256 d1, uint256 min_lp)
         external

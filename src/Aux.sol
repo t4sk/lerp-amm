@@ -13,8 +13,8 @@ contract Aux {
         external
         returns (uint256 dy)
     {
-        uint256 b0 = IPool(pool).b0();
-        uint256 b1 = IPool(pool).b1();
+        uint256 b0 = IPool(pool).balance0();
+        uint256 b1 = IPool(pool).balance1();
         uint256 n0 = IPool(pool).n0();
         uint256 n1 = IPool(pool).n1();
         uint256 w = IPool(pool).get_w();

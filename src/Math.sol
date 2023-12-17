@@ -26,6 +26,10 @@ library Math {
         return x >= 0 ? uint256(x) : uint256(-x);
     }
 
+    function abs_diff(uint256 x, uint256 y) internal pure returns (uint256) {
+        return x >= y ? x - y : y - x;
+    }
+
     function sqrt(uint256 y) internal pure returns (uint256 z) {
         if (y > 3) {
             z = y;
@@ -269,5 +273,4 @@ library Math {
     }
 
     // TODO: newton's method
-    // TODO: vyper
 }
