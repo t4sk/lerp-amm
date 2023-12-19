@@ -27,7 +27,7 @@ contract Pool {
     uint32 private constant MIN_W_DT = 24 * 3600;
 
     bool private locked;
-    Weight private weight;
+    Weight public weight;
     Balances private balances;
 
     // TODO: dynamic fee
@@ -44,8 +44,8 @@ contract Pool {
     }
 
     constructor(uint64 w, uint256 f) {
-        require(w <= W, "w > max");
-        require(f <= W, "fee > max");
+        require(w <= MAX_W, "w > max");
+        require(f <= U, "fee > max");
         coin0 = address(1);
         coin1 = address(2);
         n0 = 1;
@@ -82,7 +82,7 @@ contract Pool {
 
     // TODO: auth
     function set_w(uint64 w1, uint32 w1_time) external {
-        require(w1 <= W, "w > max");
+        require(w1 <= MAX_W, "w > max");
         require(w1_time >= uint32(block.timestamp) + MIN_W_DT, "w1 time < min");
         uint64 w = uint64(get_w());
         weight.w0 = w;
@@ -118,7 +118,7 @@ contract Pool {
     {
         // TODO: input validation
         uint256 w = get_w();
-        uint256 dw = W - w;
+        uint256 dw = MAX_W - w;
         // Old balances
         (uint256 b0, uint256 b1) = get_balances();
         // New balances
@@ -139,10 +139,8 @@ contract Pool {
         uint256 v1 = Math.sqrt(v21);
         if (s > 0) {
             // TODO: require v0 > 0?
-            fee0 = Math.abs_diff(c0, b0 * v1 / v0) * fee / W;
-            fee1 = Math.abs_diff(c1, b1 * v1 / v0) * fee / W;
-            c0 -= fee0;
-            c1 -= fee1;
+            fee0 = Math.abs_diff(c0, b0 * v1 / v0) * fee / MAX_W;
+            fee1 = Math.abs_diff(c1, b1 * v1 / v0) * fee / MAX_W;
             uint256 v22 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
             uint256 v2 = Math.sqrt(v22);
             // TODO: invariant test v1 >= v0
@@ -158,7 +156,7 @@ contract Pool {
         _mint(msg.sender, lp);
     }
 
-    function remove_liquidity(uint256 lp, uint256 min_d0, uint256 min_d1)
+    function remove_liquidity(uint256 lp, uint256 min0, uint256 min1)
         external
         lock
         returns (uint256 d0, uint256 d1)
@@ -170,8 +168,8 @@ contract Pool {
         d0 = b0 * lp / total_supply;
         d1 = b1 * lp / total_supply;
 
-        require(d0 >= min_d0, "d0 < min");
-        require(d1 >= min_d1, "d1 < min");
+        require(d0 >= min0, "d0 < min");
+        require(d1 >= min1, "d1 < min");
 
         b0 -= d0;
         b1 -= d1;
@@ -184,7 +182,7 @@ contract Pool {
     function swap(uint256 dx, uint256 dy, bool zero_for_one) external lock {
         // TODO: input validation
         uint256 w = get_w();
-        uint256 dw = W - w;
+        uint256 dw = MAX_W - w;
 
         (uint256 b0, uint256 b1) = get_balances();
         uint256 fee0 = 0;
@@ -192,11 +190,11 @@ contract Pool {
 
         uint256 v20 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
         if (zero_for_one) {
-            fee1 = dy * fee / W;
+            fee1 = dy * fee / MAX_W;
             b0 += dx;
             b1 -= (dy - fee1);
         } else {
-            fee0 = dy * fee / W;
+            fee0 = dy * fee / MAX_W;
             b0 -= (dy - fee0);
             b1 += dx;
         }
