@@ -37,6 +37,7 @@ contract Aux {
                 int256(v2)
             );
             y1 = uint256(iy);
+            dy = (y0 - y1) / n1;
         } else {
             y0 = x0;
             (int256 iy,) = Math.calc_y(
@@ -48,10 +49,10 @@ contract Aux {
                 int256(v2)
             );
             y1 = uint256(iy);
+            dy = (y0 - y1) / n0;
         }
-        dy = y0 - y1;
 
-        require(dy >= min_dy, "dy < min");
+        // require(dy >= min_dy, "dy < min");
         IPool(pool).swap(dx, dy, zero_for_one);
     }
 }

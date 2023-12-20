@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 uint256 constant MAX_W = 1e5;
+uint256 constant MAX_FEE = 1e18;
 uint256 constant U = 1e18;
 int256 constant I = 1e18;
 

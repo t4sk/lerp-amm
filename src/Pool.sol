@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import "./Math.sol";
+import "forge-std/Test.sol";
 
 // TODO: vyper
 // TODO: erc20
@@ -45,7 +46,7 @@ contract Pool {
 
     constructor(uint64 w, uint256 f) {
         require(w <= MAX_W, "w > max");
-        require(f <= U, "fee > max");
+        require(f <= MAX_FEE, "fee > max");
         coin0 = address(1);
         coin1 = address(2);
         n0 = 1;
@@ -125,7 +126,7 @@ contract Pool {
         uint256 c0 = b0;
         uint256 c1 = b1;
 
-        uint256 v20 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
+        uint256 v20 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
         c0 += d0;
         c1 += d1;
         uint256 v21 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
@@ -139,8 +140,8 @@ contract Pool {
         uint256 v1 = Math.sqrt(v21);
         if (s > 0) {
             // TODO: require v0 > 0?
-            fee0 = Math.abs_diff(c0, b0 * v1 / v0) * fee / MAX_W;
-            fee1 = Math.abs_diff(c1, b1 * v1 / v0) * fee / MAX_W;
+            fee0 = Math.abs_diff(c0, b0 * v1 / v0) * fee / MAX_FEE;
+            fee1 = Math.abs_diff(c1, b1 * v1 / v0) * fee / MAX_FEE;
             uint256 v22 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
             uint256 v2 = Math.sqrt(v22);
             // TODO: invariant test v1 >= v0
@@ -189,16 +190,22 @@ contract Pool {
         uint256 fee1 = 0;
 
         uint256 v20 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
+        console.log("HERE");
         if (zero_for_one) {
-            fee1 = dy * fee / MAX_W;
+            fee1 = dy * fee / MAX_FEE;
+            console.log("b1", b1);
+            console.log("dy fee", dy, fee1);
             b0 += dx;
             b1 -= (dy - fee1);
+            console.log("HERE");
         } else {
-            fee0 = dy * fee / MAX_W;
+            fee0 = dy * fee / MAX_FEE;
             b0 -= (dy - fee0);
             b1 += dx;
         }
+        console.log("HERE");
         uint256 v21 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
+        console.log("HERE");
 
         require(v21 >= v20, "v");
 
