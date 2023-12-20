@@ -12,5 +12,7 @@ interface IPool {
     function remove_liquidity(uint256 lp, uint256 min0, uint256 min1)
         external
         returns (uint256 d0, uint256 d1);
-    function swap(uint256 dx, uint256 dy, bool zero_for_one) external;
+    function swap(uint256 d_in, uint256 d_out, bool zero_for_one)
+        external
+        returns (uint256 out, uint256 fee);
 }

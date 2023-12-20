@@ -72,7 +72,7 @@ contract Pool {
 
     function get_w() public view returns (uint256) {
         Weight memory w = weight;
-        return Math.calc_w(
+        return Math.lerp_w(
             uint256(w.w0),
             uint256(w.w1),
             uint256(w.w0_time),
@@ -172,44 +172,39 @@ contract Pool {
         require(d0 >= min0, "d0 < min");
         require(d1 >= min1, "d1 < min");
 
-        b0 -= d0;
-        b1 -= d1;
-
-        _set_balances(b0, b1);
+        _set_balances(b0 - d0, b1 - d1);
         _burn(msg.sender, lp);
     }
 
     // TODO: return dy and fee?
-    function swap(uint256 dx, uint256 dy, bool zero_for_one) external lock {
+    function swap(uint256 d_in, uint256 d_out, bool zero_for_one)
+        external
+        lock
+        returns (uint256, uint256)
+    {
         // TODO: input validation
         uint256 w = get_w();
         uint256 dw = MAX_W - w;
 
         (uint256 b0, uint256 b1) = get_balances();
-        uint256 fee0 = 0;
-        uint256 fee1 = 0;
+        uint256 f = d_out * fee / MAX_FEE;
+        d_out -= f;
 
         uint256 v20 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
-        console.log("HERE");
         if (zero_for_one) {
-            fee1 = dy * fee / MAX_FEE;
-            console.log("b1", b1);
-            console.log("dy fee", dy, fee1);
-            b0 += dx;
-            b1 -= (dy - fee1);
-            console.log("HERE");
+            b0 += d_in;
+            b1 -= d_out;
         } else {
-            fee0 = dy * fee / MAX_FEE;
-            b0 -= (dy - fee0);
-            b1 += dx;
+            b0 -= d_out;
+            b1 += d_in;
         }
-        console.log("HERE");
         uint256 v21 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
-        console.log("HERE");
-
         require(v21 >= v20, "v");
 
-        _set_balances(b0 + fee0, b1 + fee1);
+        zero_for_one ? b1 += f : b0 += f;
+        _set_balances(b0, b1);
         // TODO: require balance of coin 0 and 1 >= b0 and b1
+
+        return (d_out, f);
     }
 }

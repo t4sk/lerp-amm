@@ -179,7 +179,7 @@ library Math {
         }
     }
 
-    function calc_w(uint256 w0, uint256 w1, uint256 t0, uint256 t1, uint256 t)
+    function lerp_w(uint256 w0, uint256 w1, uint256 t0, uint256 t1, uint256 t)
         internal
         pure
         returns (uint256 w)
@@ -251,6 +251,7 @@ library Math {
         int256 dw,
         int256 v2
     ) internal pure returns (int256 y, uint256 i) {
+        // TODO: return early when W = 0 and W = 1
         int256 f0 = f(x, y0, w, dw, v2);
         if (f0 == 0) {
             return (y0, 0);

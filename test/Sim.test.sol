@@ -44,11 +44,19 @@ contract SimTest is Test {
             console.log("lp", lp);
         }
 
-        uint256 dx = 1e18;
-        uint256 min_dy = 0.99 * 1e6;
-        bool zero_for_one = true;
-
-        uint256 dy = aux.swap(address(pool), dx, min_dy, true);
-        console.log("DY", dy);
+        {
+            uint256 d_in = 1e18;
+            uint256 min_out = 0.95 * 1e6;
+            (uint256 out, uint256 fee) =
+                aux.swap(address(pool), d_in, min_out, true);
+            console.log("DY", out, fee);
+        }
+        {
+            uint256 d_in = 1e6;
+            uint256 min_out = 0.95 * 1e18;
+            (uint256 out, uint256 fee) =
+                aux.swap(address(pool), d_in, min_out, false);
+            console.log("DY", out, fee);
+        }
     }
 }

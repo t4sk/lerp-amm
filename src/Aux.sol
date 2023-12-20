@@ -9,10 +9,14 @@ contract Aux {
     // TODO: remove liquidity
     // TODO: remove liquidity one coin
 
-    function swap(address pool, uint256 dx, uint256 min_dy, bool zero_for_one)
-        external
-        returns (uint256 dy)
-    {
+    function swap(
+        address pool,
+        uint256 d_in,
+        uint256 min_out,
+        bool zero_for_one
+    ) external returns (uint256 out, uint256 fee) {
+        require(min_out > 0, "min out = 0");
+
         (uint256 b0, uint256 b1) = IPool(pool).get_balances();
         uint256 n0 = IPool(pool).n0();
         uint256 n1 = IPool(pool).n1();
@@ -22,37 +26,32 @@ contract Aux {
         uint256 x0 = b0 * n0;
         uint256 x1 = b1 * n1;
 
-        // TODO: calc fee here?
+        uint256 d_out = 0;
         uint256 v2 = Math.calc_v2(x0, x1, w, dw);
-        uint256 y0 = 0;
-        uint256 y1 = 0;
         if (zero_for_one) {
-            y0 = x1;
             (int256 iy,) = Math.calc_y(
-                int256(x0 + dx * n0),
+                int256(x0 + d_in * n0),
                 int256(x1),
-                int256(x1 - min_dy * n1),
+                // TODO: good initial y1
+                int256(x1 - (min_out * n1) / 2),
                 int256(w),
                 int256(dw),
                 int256(v2)
             );
-            y1 = uint256(iy);
-            dy = (y0 - y1) / n1;
+            d_out = (x1 - uint256(iy)) / n1;
         } else {
-            y0 = x0;
             (int256 iy,) = Math.calc_y(
-                int256(x1 + dx * n1),
+                int256(x1 + d_in * n1),
                 int256(x0),
-                int256(x0 - min_dy * n0),
+                int256(x0 - (min_out * n0) / 2),
                 int256(w),
                 int256(dw),
                 int256(v2)
             );
-            y1 = uint256(iy);
-            dy = (y0 - y1) / n0;
+            d_out = (x0 - uint256(iy)) / n0;
         }
 
-        // require(dy >= min_dy, "dy < min");
-        IPool(pool).swap(dx, dy, zero_for_one);
+        (out, fee) = IPool(pool).swap(d_in, d_out, zero_for_one);
+        require(out >= min_out, "out < min");
     }
 }
