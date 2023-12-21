@@ -30,7 +30,6 @@ contract Pool {
     bool private locked;
     Weight public weight;
     Balances private balances;
-
     // TODO: dynamic fee
     uint256 public fee;
 
@@ -79,6 +78,11 @@ contract Pool {
             uint256(w.w1_time),
             block.timestamp
         );
+    }
+
+    function set_fee(uint256 f) external {
+        require(f <= MAX_FEE, "fee > max");
+        fee = f;
     }
 
     // TODO: auth

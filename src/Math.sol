@@ -221,11 +221,15 @@ library Math {
         v2 = mul_div(p * (dw + 4 * w), s2, dw * s2 + 16 * w * p);
     }
 
+    // xy((1-w) + 4w)(x+y)^2 = v^2((1-w)(x+y)^2 + 4w4xy)
+    // w = 0 -> xy = v^2
+    // w = 1 -> (x+y)^2 = (2v)^2
     function f(int256 x, int256 y, int256 w, int256 dw, int256 v2)
         internal
         pure
         returns (int256 z)
     {
+        // TODO: return early if w = 0 or w = 1
         int256 p = x * y;
         int256 s2 = (x + y) ** 2;
         int256 l = s2 > 0
@@ -243,6 +247,9 @@ library Math {
     // Secant method
     // x = token in
     // y = token out
+    // xy((1-w) + 4w)(x+y)^2 = v^2((1-w)(x+y)^2 + 4w4xy)
+    // w = 0 -> xy = v^2
+    // w = 1 -> (x+y)^2 = (2v)^2
     function calc_y(
         int256 x,
         int256 y0,
@@ -251,7 +258,17 @@ library Math {
         int256 dw,
         int256 v2
     ) internal pure returns (int256 y, uint256 i) {
-        // TODO: return early when W = 0 and W = 1
+        // TODO: return early if w = 0 or w = 1
+        // if (w == 0) {
+        //     x*(y0 - dy) = v2
+        //     y0 - v2 / x = dy
+        // }
+        // if (w == 1) {
+        //     v = Math.sqrt(v2)
+        //     x + (y0 - dy) = 2v
+        //     dy = x + y0 - 2v
+        // }
+
         int256 f0 = f(x, y0, w, dw, v2);
         if (f0 == 0) {
             return (y0, 0);

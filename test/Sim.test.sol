@@ -10,8 +10,10 @@ contract SimTest is Test {
     Pool private pool;
     Aux private aux;
 
+    // TODO: python test
+    // TODO: test with fee = 0
     function setUp() public {
-        pool = new Pool(0.7 * 1e5, 0.0001 * 1e18);
+        pool = new Pool(0.7 * 1e5, 1 * 0.0001 * 1e18);
         aux = new Aux();
     }
 
@@ -44,19 +46,21 @@ contract SimTest is Test {
             console.log("lp", lp);
         }
 
-        {
-            uint256 d_in = 1e18;
-            uint256 min_out = 0.95 * 1e6;
-            (uint256 out, uint256 fee) =
-                aux.swap(address(pool), d_in, min_out, true);
-            console.log("DY", out, fee);
-        }
-        {
-            uint256 d_in = 1e6;
-            uint256 min_out = 0.95 * 1e18;
-            (uint256 out, uint256 fee) =
-                aux.swap(address(pool), d_in, min_out, false);
-            console.log("DY", out, fee);
+        for (uint256 i = 0; i < 100; i++) {
+            {
+                uint256 d_in = 1e18;
+                uint256 min_out = 0.95 * 1e6;
+                (uint256 out, uint256 fee) =
+                    aux.swap(address(pool), d_in, min_out, true);
+                console.log("DY", out, fee);
+            }
+            {
+                uint256 d_in = 1e6;
+                uint256 min_out = 0.95 * 1e18;
+                (uint256 out, uint256 fee) =
+                    aux.swap(address(pool), d_in, min_out, false);
+                console.log("DY", out, fee);
+            }
         }
     }
 }
