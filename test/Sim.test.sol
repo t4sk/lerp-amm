@@ -13,6 +13,10 @@ contract SimTest is Test {
     // TODO: python test
     // TODO: test with fee = 0
     function setUp() public {
+        // high fee -> balanced
+        // low fee  -> imbalanced
+        // high w   -> imbalanced
+        // low w    -> balanced
         pool = new Pool(0.9 * 1e5, 1 * 0.001 * 1e18);
         aux = new Aux();
     }
@@ -34,7 +38,7 @@ contract SimTest is Test {
         for (uint256 i = 0; i < data.length; i++) {
             (uint256 out, uint256 fee) =
                 aux.swap(address(pool), data[i].d_in, 0, data[i].zero_for_one);
-                // aux.swap(address(pool), out, 0, !data[i].zero_for_one);
+            // aux.swap(address(pool), out, 0, !data[i].zero_for_one);
 
             (uint256 b0, uint256 b1) = pool.get_balances();
             // uint256 v2 = Math.calc_v2(b0, b1, 0.7 * 1e5, 0.3 * 1e5);

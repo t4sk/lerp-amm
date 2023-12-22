@@ -206,7 +206,6 @@ contract Pool {
         uint256 v21 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
         require(v21 >= v20, "v");
 
-        // TODO: include fee in balances?
         zero_for_one ? b1 += f : b0 += f;
         _set_balances(b0, b1);
         // TODO: require balance of coin 0 and 1 >= b0 and b1
