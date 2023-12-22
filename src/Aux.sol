@@ -8,6 +8,7 @@ contract Aux {
     // TODO: add liquidity imbalanced
     // TODO: remove liquidity
     // TODO: remove liquidity one coin
+    // TODO: gas and price compare with curve v1
 
     function swap(
         address pool,
@@ -15,7 +16,7 @@ contract Aux {
         uint256 min_out,
         bool zero_for_one
     ) external returns (uint256 out, uint256 fee) {
-        require(min_out > 0, "min out = 0");
+        // require(min_out > 0, "min out = 0");
 
         (uint256 b0, uint256 b1) = IPool(pool).get_balances();
         uint256 n0 = IPool(pool).n0();
@@ -33,7 +34,7 @@ contract Aux {
                 int256(x0 + d_in * n0),
                 int256(x1),
                 // TODO: good initial y1
-                int256(x1 - (min_out * n1) / 2),
+                int256(x1 - Math.max(min_out * n1 / 2, 1)),
                 int256(w),
                 int256(dw),
                 int256(v2)
@@ -43,7 +44,7 @@ contract Aux {
             (int256 iy,) = Math.calc_y(
                 int256(x1 + d_in * n1),
                 int256(x0),
-                int256(x0 - (min_out * n0) / 2),
+                int256(x0 - Math.max(min_out * n0 / 2, 1)),
                 int256(w),
                 int256(dw),
                 int256(v2)
