@@ -28,6 +28,7 @@ contract Pool {
 
     uint32 private constant MIN_W_DT = 24 * 3600;
 
+    address public owner;
     bool private locked;
     Weight public weight;
     Balances private balances;
@@ -44,6 +45,11 @@ contract Pool {
         locked = false;
     }
 
+    modifier auth() {
+        require(msg.sender == owner, "not authorized");
+        _;
+    }
+
     constructor(uint64 w, uint256 f) {
         require(w <= MAX_W, "w > max");
         require(f <= MAX_FEE, "fee > max");
@@ -58,6 +64,7 @@ contract Pool {
             w1_time: uint32(block.timestamp)
         });
         fee = f;
+        owner = msg.sender;
     }
 
     function _mint(address dst, uint256 amount) private {
@@ -70,24 +77,16 @@ contract Pool {
         total_supply -= amount;
     }
 
-    function get_w() public view returns (uint256) {
-        Weight memory w = weight;
-        return Math.lerp_w(
-            uint256(w.w0),
-            uint256(w.w1),
-            uint256(w.w0_time),
-            uint256(w.w1_time),
-            block.timestamp
-        );
+    function set_owner(address _owner) external auth {
+        owner = _owner;
     }
 
-    function set_fee(uint256 f) external {
+    function set_fee(uint256 f) external auth {
         require(f <= MAX_FEE, "fee > max");
         fee = f;
     }
 
-    // TODO: auth
-    function set_w(uint64 w1, uint32 w1_time) external {
+    function set_w(uint64 w1, uint32 w1_time) external auth {
         require(w1 <= MAX_W, "w > max");
         require(w1_time >= uint32(block.timestamp) + MIN_W_DT, "w1 time < min");
         uint64 w = uint64(get_w());
@@ -97,12 +96,23 @@ contract Pool {
         weight.w1_time = w1_time;
     }
 
-    function stop_w() external {
+    function stop_w() external auth {
         uint64 w = uint64(get_w());
         weight.w0 = w;
         weight.w1 = w;
         weight.w0_time = uint32(block.timestamp);
         weight.w1_time = uint32(block.timestamp);
+    }
+
+    function get_w() public view returns (uint256) {
+        Weight memory w = weight;
+        return Math.lerp_w(
+            uint256(w.w0),
+            uint256(w.w1),
+            uint256(w.w0_time),
+            uint256(w.w1_time),
+            block.timestamp
+        );
     }
 
     function get_balances() public view returns (uint256 b0, uint256 b1) {

@@ -33,18 +33,19 @@ contract SimTest is Test {
 
         SwapIn[] memory data = abi.decode(vm.parseJson(json), (SwapIn[]));
 
-        pool.add_liquidity(100 * 1e18, 100 * 1e18, 0);
+        (uint256 lp,,) = pool.add_liquidity(100 * 1e18, 100 * 1e18, 0);
 
         for (uint256 i = 0; i < data.length; i++) {
             (uint256 out, uint256 fee) =
                 aux.swap(address(pool), data[i].d_in, 0, data[i].zero_for_one);
-            // aux.swap(address(pool), out, 0, !data[i].zero_for_one);
+            aux.swap(address(pool), out + fee, 0, !data[i].zero_for_one);
 
             (uint256 b0, uint256 b1) = pool.get_balances();
-            // uint256 v2 = Math.calc_v2(b0, b1, 0.7 * 1e5, 0.3 * 1e5);
-
             console.log("PY_LOG", b0, b1);
         }
+
+        (uint256 d0, uint256 d1) = pool.remove_liquidity(lp, 0, 0);
+        console.log("remove", d0, d1);
     }
 
     function tmp_test() public {
