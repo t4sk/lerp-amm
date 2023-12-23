@@ -35,7 +35,7 @@ contract SimTest is Test {
 
         (uint256 lp,,) = pool.add_liquidity(100 * 1e18, 100 * 1e18, 0);
 
-        for (uint256 i = 0; i < data.length; i++) {
+        for (uint256 i = 0; i < 3; i++) {
             (uint256 out, uint256 fee) =
                 aux.swap(address(pool), data[i].d_in, 0, data[i].zero_for_one);
             aux.swap(address(pool), out + fee, 0, !data[i].zero_for_one);
@@ -44,8 +44,11 @@ contract SimTest is Test {
             console.log("PY_LOG", b0, b1);
         }
 
-        (uint256 d0, uint256 d1) = pool.remove_liquidity(lp, 0, 0);
-        console.log("remove", d0, d1);
+        // (uint256 d0, uint256 d1) = pool.remove_liquidity_one_coin(lp, 0, 0);
+        // console.log("remove", d0, d1);
+        (uint256 out, uint256 fee) =
+            aux.remove_liquidity_one_coin(address(pool), lp / 10, 0, true);
+        console.log("remove", out, fee);
     }
 
     function tmp_test() public {

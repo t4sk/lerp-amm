@@ -15,7 +15,7 @@ contract Aux {
         uint256 d_in,
         uint256 min_out,
         bool zero_for_one
-    ) external returns (uint256 out, uint256 fee) {
+    ) public returns (uint256 out, uint256 fee) {
         // require(min_out > 0, "min out = 0");
 
         (uint256 b0, uint256 b1) = IPool(pool).get_balances();
@@ -54,5 +54,21 @@ contract Aux {
 
         (out, fee) = IPool(pool).swap(d_in, d_out, zero_for_one);
         require(out >= min_out, "out < min");
+    }
+
+    function remove_liquidity_one_coin(
+        address pool,
+        uint256 lp,
+        uint256 min_out,
+        bool zero_for_one
+    ) external returns (uint256 out, uint256 fee) {
+        (uint256 d0, uint256 d1) = IPool(pool).remove_liquidity(lp, 0, 0);
+        if (zero_for_one) {
+            (out, fee) = swap(pool, d0, 0, zero_for_one);
+            out += d1;
+        } else {
+            (out, fee) = swap(pool, d1, 0, zero_for_one);
+            out += d0;
+        }
     }
 }
