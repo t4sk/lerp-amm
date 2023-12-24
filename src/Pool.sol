@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+import "./interfaces/IERC20.sol";
+import "./ERC20.sol";
 import "./Math.sol";
+
 import "forge-std/Test.sol";
 
 // TODO: vyper
-// TODO: erc20
-// TODO: ema
-contract Pool {
+contract Pool is ERC20 {
     struct Weight {
         uint64 w0;
         uint64 w1;
@@ -35,9 +36,6 @@ contract Pool {
     // TODO: dynamic fee
     uint256 public fee;
 
-    uint256 public total_supply;
-    mapping(address => uint256) public balance_of;
-
     modifier lock() {
         require(!locked, "locked");
         locked = true;
@@ -50,13 +48,21 @@ contract Pool {
         _;
     }
 
-    constructor(uint64 w, uint256 f) {
+    constructor(
+        uint64 w,
+        uint256 f,
+        address _coin0,
+        address _coin1,
+        string memory _name,
+        string memory _symbol
+    ) ERC20(_name, _symbol, 18) {
         require(w <= MAX_W, "w > max");
         require(f <= MAX_FEE, "fee > max");
-        coin0 = address(1);
-        coin1 = address(2);
-        n0 = 1;
-        n1 = 1;
+        require(_coin0 != _coin1, "coin 0 = coin 1");
+        coin0 = _coin0;
+        coin1 = _coin1;
+        n0 = 10 ** (18 - IERC20(_coin0).decimals());
+        n1 = 10 ** (18 - IERC20(_coin1).decimals());
         weight = Weight({
             w0: w,
             w1: w,
@@ -65,16 +71,6 @@ contract Pool {
         });
         fee = f;
         owner = msg.sender;
-    }
-
-    function _mint(address dst, uint256 amount) private {
-        balance_of[dst] += amount;
-        total_supply += amount;
-    }
-
-    function _burn(address src, uint256 amount) private {
-        balance_of[src] -= amount;
-        total_supply -= amount;
     }
 
     function set_owner(address _owner) external auth {
@@ -127,7 +123,23 @@ contract Pool {
         bals.b1 = uint128(b1);
     }
 
-    function add_liquidity(uint256 d0, uint256 d1, uint256 min_lp)
+    function _bal0() private view returns (uint256) {
+        (bool ok, bytes memory data) = coin0.staticcall(
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(this))
+        );
+        require(ok && data.length >= 32, "balance 0 failed");
+        return abi.decode(data, (uint256));
+    }
+
+    function _bal1() private view returns (uint256) {
+        (bool ok, bytes memory data) = coin1.staticcall(
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(this))
+        );
+        require(ok && data.length >= 32, "balance 1 failed");
+        return abi.decode(data, (uint256));
+    }
+
+    function add_liquidity(uint256 d0, uint256 d1, uint256 min_lp, address dst)
         external
         lock
         returns (uint256 lp, uint256 fee0, uint256 fee1)
@@ -150,7 +162,7 @@ contract Pool {
         // TODO: imbalance fee?
         // w = 0 -> xy = v^2
         // w = 1 -> (x+y)^2 = (2v)^2
-        uint256 s = total_supply;
+        uint256 s = totalSupply;
         uint256 v0 = Math.sqrt(v20);
         uint256 v1 = Math.sqrt(v21);
         if (s > 0) {
@@ -169,56 +181,80 @@ contract Pool {
         _set_balances(c0, c1);
 
         require(lp >= min_lp, "lp < min");
-        _mint(msg.sender, lp);
+        _mint(dst, lp);
+
+        if (d0 > 0) {
+            IERC20(coin0).transferFrom(msg.sender, address(this), d0);
+        }
+        if (d1 > 0) {
+            IERC20(coin1).transferFrom(msg.sender, address(this), d1);
+        }
     }
 
-    function remove_liquidity(uint256 lp, uint256 min0, uint256 min1)
-        external
-        lock
-        returns (uint256 d0, uint256 d1)
-    {
+    function remove_liquidity(
+        uint256 lp,
+        uint256 min0,
+        uint256 min1,
+        address dst
+    ) external lock returns (uint256 d0, uint256 d1) {
         // TODO: input validation
         // TODO: use token balance?
         (uint256 b0, uint256 b1) = get_balances();
+        uint256 s = totalSupply;
 
-        d0 = b0 * lp / total_supply;
-        d1 = b1 * lp / total_supply;
+        d0 = b0 * lp / s;
+        d1 = b1 * lp / s;
 
         require(d0 >= min0, "d0 < min");
         require(d1 >= min1, "d1 < min");
 
         _set_balances(b0 - d0, b1 - d1);
         _burn(msg.sender, lp);
+
+        if (d0 > 0) {
+            IERC20(coin0).transfer(dst, d0);
+        }
+        if (d1 > 0) {
+            IERC20(coin1).transfer(dst, d1);
+        }
     }
 
-    // TODO: return dy and fee?
-    function swap(uint256 d_in, uint256 d_out, bool zero_for_one)
+    function swap(uint256 d_in, uint256 d_out, bool zero_for_one, address dst)
         external
         lock
         returns (uint256, uint256)
     {
+        require(dst != address(0), "dst = 0 address");
         // TODO: input validation
         uint256 w = get_w();
         uint256 dw = MAX_W - w;
 
         (uint256 b0, uint256 b1) = get_balances();
+        uint256 c0 = b0;
+        uint256 c1 = b1;
         uint256 f = d_out * fee / MAX_FEE;
         d_out -= f;
 
         uint256 v20 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
         if (zero_for_one) {
-            b0 += d_in;
-            b1 -= d_out;
+            c0 += d_in;
+            c1 -= d_out;
         } else {
-            b0 -= d_out;
-            b1 += d_in;
+            c0 -= d_out;
+            c1 += d_in;
         }
-        uint256 v21 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
+        uint256 v21 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
         require(v21 >= v20, "v");
 
-        zero_for_one ? b1 += f : b0 += f;
-        _set_balances(b0, b1);
-        // TODO: require balance of coin 0 and 1 >= b0 and b1
+        _set_balances(c0, c1);
+
+        if (zero_for_one) {
+            require(_bal0() - b0 >= d_in, "bal 0");
+            IERC20(coin1).transfer(dst, d_out);
+        } else {
+            require(_bal1() - b1 >= d_in, "bal 1");
+            IERC20(coin0).transfer(dst, d_out);
+        }
 
         return (d_out, f);
     }
