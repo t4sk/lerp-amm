@@ -57,8 +57,8 @@ contract Pool is ERC20 {
         string memory _name,
         string memory _symbol
     ) ERC20(_name, _symbol, 18) {
-        require(w <= MAX_W, "w > max");
-        require(f <= MAX_FEE, "fee > max");
+        require(w <= W, "w > max");
+        require(f <= F, "fee > max");
         require(_coin0 != _coin1, "coin 0 = coin 1");
         coin0 = _coin0;
         coin1 = _coin1;
@@ -79,12 +79,12 @@ contract Pool is ERC20 {
     }
 
     function set_fee(uint256 f) external auth {
-        require(f <= MAX_FEE, "fee > max");
+        require(f <= F, "fee > max");
         fee = f;
     }
 
     function set_w(uint64 w1, uint32 w1_time) external auth {
-        require(w1 <= MAX_W, "w > max");
+        require(w1 <= W, "w > max");
         require(w1_time >= uint32(block.timestamp) + MIN_W_DT, "w1 time < min");
         uint64 w = uint64(get_w());
         weight.w0 = w;
@@ -147,7 +147,7 @@ contract Pool is ERC20 {
     {
         // TODO: input validation
         uint256 w = get_w();
-        uint256 dw = MAX_W - w;
+        uint256 dw = W - w;
         // Old balances
         (uint256 b0, uint256 b1) = get_balances();
         // New balances
@@ -166,8 +166,8 @@ contract Pool is ERC20 {
         uint256 v1 = Math.sqrt(v21);
         if (s > 0) {
             // TODO: require v0 > 0?
-            fee0 = Math.abs_uint(c0, b0 * v1 / v0) * fee / MAX_FEE;
-            fee1 = Math.abs_uint(c1, b1 * v1 / v0) * fee / MAX_FEE;
+            fee0 = Math.abs_uint(c0, b0 * v1 / v0) * fee / F;
+            fee1 = Math.abs_uint(c1, b1 * v1 / v0) * fee / F;
             uint256 v22 =
                 Math.calc_v2((c0 - fee0) * n0, (c1 - fee1) * n1, w, dw);
             uint256 v2 = Math.sqrt(v22);
@@ -226,12 +226,12 @@ contract Pool is ERC20 {
         require(dst != address(0), "dst = 0 address");
         // TODO: input validation
         uint256 w = get_w();
-        uint256 dw = MAX_W - w;
+        uint256 dw = W - w;
 
         (uint256 b0, uint256 b1) = get_balances();
         uint256 c0 = b0;
         uint256 c1 = b1;
-        uint256 f = d_out * fee / MAX_FEE;
+        uint256 f = d_out * fee / F;
         d_out -= f;
 
         uint256 v20 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);

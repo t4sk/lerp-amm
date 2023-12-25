@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-uint256 constant MAX_W = 1e5;
-uint256 constant MAX_FEE = 1e18;
+uint256 constant W = 1e5;
+uint256 constant F = 1e18;
 uint256 constant U = 1e18;
 int256 constant I = 1e18;
 
@@ -195,16 +195,16 @@ library Math {
         if (w == 0) {
             return x * y;
         }
-        if (w == MAX_W) {
+        if (w == W) {
             return (x + y) ** 2 / 4;
         }
-        // v2 = p*(dw + 4*w)*s2 / (dw*s2 + 16*w*p)
         if (x == 0 || y == 0) {
             return 0;
         }
+        // v2 = p*(dw + 4*w)*s2 / (dw*s2 + 16*w*p)
         uint256 p = x * y;
         uint256 s2 = (x + y) ** 2;
-        // MAX_W * U^2
+        // W * U^2
         v2 = mul_div(p * (dw + 4 * w), s2, dw * s2 + 16 * w * p);
     }
 

@@ -28,13 +28,13 @@ contract MathTest is Test {
         uint256[6][6] memory tests = [
             // w0, w1, t0, t1, t, expected w
             // w0 < w1
-            [0, MAX_W, 0, 100, 0, 0],
-            [0, MAX_W, 0, 100, 50, MAX_W / 2],
-            [0, MAX_W, 0, 100, 100, MAX_W],
+            [0, W, 0, 100, 0, 0],
+            [0, W, 0, 100, 50, W / 2],
+            [0, W, 0, 100, 100, W],
             // w1 < w0
-            [MAX_W, 0, 0, 100, 0, MAX_W],
-            [MAX_W, 0, 0, 100, 50, MAX_W / 2],
-            [MAX_W, 0, 0, 100, 100, 0]
+            [W, 0, 0, 100, 0, W],
+            [W, 0, 0, 100, 50, W / 2],
+            [W, 0, 0, 100, 100, 0]
         ];
 
         for (uint256 i = 0; i < tests.length; i++) {
@@ -55,8 +55,8 @@ contract MathTest is Test {
         uint256 t1,
         uint256 t
     ) public {
-        w0 = bound(w0, 0, MAX_W);
-        w1 = bound(w1, 0, MAX_W);
+        w0 = bound(w0, 0, W);
+        w1 = bound(w1, 0, W);
         t0 = bound(t0, 0, type(uint32).max);
         t1 = bound(t1, 0, type(uint32).max);
         if (t0 > t1) {
@@ -66,7 +66,7 @@ contract MathTest is Test {
 
         uint256 w = Math.lerp_w(w0, w1, t0, t1, t);
         assertGe(w, 0);
-        assertLe(w, MAX_W);
+        assertLe(w, W);
         if (w0 <= w1) {
             assertGe(w, w0);
             assertLe(w, w1);
@@ -79,8 +79,8 @@ contract MathTest is Test {
     function test_v2_f_fuzz(uint256 x, uint256 y, uint256 w) public {
         x = bound(x, 1e6, 1e32);
         y = bound(y, 1e6, 1e32);
-        w = bound(w, 0, MAX_W);
-        uint256 dw = MAX_W - w;
+        w = bound(w, 0, W);
+        uint256 dw = W - w;
 
         uint256 v2 = Math.calc_v2(x, y, w, dw);
         int256 f =
@@ -94,8 +94,8 @@ contract MathTest is Test {
             // x, y, w, v2
             [U, U, 0, U * U],
             [M, M, 0, M * M],
-            [U, U, MAX_W, (U + U) ** 2 / 4],
-            [M, M, MAX_W, (M + M) ** 2 / 4],
+            [U, U, W, (U + U) ** 2 / 4],
+            [M, M, W, (M + M) ** 2 / 4],
             [U, U, 0.1 * 1e5, (U + U) ** 2 / 4],
             [M, M, 0.1 * 1e5, (M + M) ** 2 / 4],
             [U, U, 0.2 * 1e5, (U + U) ** 2 / 4],
@@ -115,7 +115,7 @@ contract MathTest is Test {
             uint256 y = tests[i][1];
             uint256 w = tests[i][2];
             uint256 v2 = tests[i][3];
-            uint256 dw = MAX_W - w;
+            uint256 dw = W - w;
             assertEq(Math.calc_v2(x, y, w, dw), v2);
         }
     }
@@ -123,14 +123,14 @@ contract MathTest is Test {
     function test_calc_v2_fuzz(uint256 x, uint256 y, uint256 w) public {
         x = bound(x, 0, M);
         y = bound(y, 0, M);
-        w = bound(w, 0, MAX_W);
-        uint256 dw = MAX_W - w;
+        w = bound(w, 0, W);
+        uint256 dw = W - w;
 
         uint256 v2 = Math.calc_v2(x, y, w, dw);
 
         if (w == 0) {
             assertEq(v2, x * y);
-        } else if (w == MAX_W) {
+        } else if (w == W) {
             assertEq(v2, (x + y) ** 2 / 4);
         } else {
             if (x == 0 || y == 0) {
@@ -144,11 +144,31 @@ contract MathTest is Test {
         }
     }
 
+    function test_f() public {
+        uint256[3][1] memory tests = [[uint256(0), 0, 0]];
+
+        for (uint256 i = 0; i < tests.length; i++) {
+            uint256 x = tests[i][0];
+            uint256 y = tests[i][1];
+            uint256 w = tests[i][2];
+            uint256 dw = W - w;
+            uint256 v2 = Math.calc_v2(x, y, w, dw);
+            assertEq(
+                Math.f(int256(x), int256(y), int256(w), int256(dw), int256(v2)),
+                0
+            );
+        }
+    }
+
+    function test_f_fuzz() public {
+        //
+    }
+
     function test_calc_y() public {
         uint256 x = 1e32;
         uint256 y0 = 1e32;
-        uint256 w = MAX_W * 70 / 100;
-        uint256 dw = MAX_W - w;
+        uint256 w = W * 70 / 100;
+        uint256 dw = W - w;
 
         uint256 dx = 100 * 1e18;
         uint256 min_dy = 99 * 1e18;
@@ -173,8 +193,8 @@ contract MathTest is Test {
         y0 = bound(y0, 1e6, 1e32);
 
         // y0 = x;
-        uint256 w = MAX_W * 70 / 100;
-        uint256 dw = MAX_W - w;
+        uint256 w = W * 70 / 100;
+        uint256 dw = W - w;
         dx = bound(dx, 1e6, 1e30);
         uint256 y1 = y0 >= dx / 2 ? y0 - dx / 2 : 1;
 

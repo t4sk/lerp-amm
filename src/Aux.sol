@@ -33,7 +33,7 @@ contract Aux {
 
         (uint256 b0, uint256 b1) = IPool(pool).get_balances();
         uint256 w = IPool(pool).get_w();
-        uint256 dw = MAX_W - w;
+        uint256 dw = W - w;
 
         uint256 x0 = b0 * n0;
         uint256 x1 = b1 * n1;
