@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import "../src/ERC20.sol";
+import "../../src/ERC20.sol";
 
 contract Coin is ERC20 {
     constructor(string memory _name, string memory _symbol, uint8 _decimals)

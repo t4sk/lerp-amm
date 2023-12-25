@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "../src/Math.sol";
 import {Pool} from "../src/Pool.sol";
 import {Aux} from "../src/Aux.sol";
-import {Coin} from "./Coin.sol";
+import {Coin} from "./lib/Coin.sol";
 
 // TODO: sim add liq, swaps, remove liq
 // TODO: invariant tests
