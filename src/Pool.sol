@@ -166,8 +166,8 @@ contract Pool is ERC20 {
         uint256 v1 = Math.sqrt(v21);
         if (s > 0) {
             // TODO: require v0 > 0?
-            fee0 = Math.abs_diff(c0, b0 * v1 / v0) * fee / MAX_FEE;
-            fee1 = Math.abs_diff(c1, b1 * v1 / v0) * fee / MAX_FEE;
+            fee0 = Math.abs_uint(c0, b0 * v1 / v0) * fee / MAX_FEE;
+            fee1 = Math.abs_uint(c1, b1 * v1 / v0) * fee / MAX_FEE;
             uint256 v22 =
                 Math.calc_v2((c0 - fee0) * n0, (c1 - fee1) * n1, w, dw);
             uint256 v2 = Math.sqrt(v22);

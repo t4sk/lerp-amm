@@ -45,7 +45,7 @@ contract Aux {
                 int256(x0 + d_in * n0),
                 int256(x1),
                 // TODO: good initial y1
-                int256(x1 - Math.max(min_out * n1 / 2, 1)),
+                int256(x1 - Math.max_uint(min_out * n1 / 2, 1)),
                 int256(w),
                 int256(dw),
                 int256(v2)
@@ -61,7 +61,7 @@ contract Aux {
             (int256 iy,) = Math.calc_y(
                 int256(x1 + d_in * n1),
                 int256(x0),
-                int256(x0 - Math.max(min_out * n0 / 2, 1)),
+                int256(x0 - Math.max_uint(min_out * n0 / 2, 1)),
                 int256(w),
                 int256(dw),
                 int256(v2)

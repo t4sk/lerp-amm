@@ -88,7 +88,7 @@ contract MathTest is Test {
         int256 v2
     ) internal pure returns (int256 y, uint256 i) {
         int256 f0 = Math.f(x, y0, w, dw, v2);
-        if (Math.abs(f0) <= 0) {
+        if (Math.abs_int(f0) <= 0) {
             return (y0, 0);
         }
         int256 f1 = 0;
@@ -100,10 +100,10 @@ contract MathTest is Test {
             console2.log("f1", f1);
             console2.log("y0", y0);
             console2.log("y1", y1);
-            if (Math.abs(f1) <= 0 || f1 == f0) {
+            if (Math.abs_int(f1) <= 0 || f1 == f0) {
                 return (y1, i);
             }
-            y2 = Math.max(y1 - f1 * (y1 - y0) / (f1 - f0), 0);
+            y2 = Math.max_int(y1 - f1 * (y1 - y0) / (f1 - f0), 0);
             // y2 = y1 - f1 * (y1 - y0) / (f1 - f0);
             y0 = y1;
             y1 = y2;

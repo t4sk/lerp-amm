@@ -18,11 +18,9 @@ contract VyTest is Test {
         console.log("ADDR", addr);
 
         IMath(addr).mul(123, 456);
-
     }
 
     function test() public {
         //
     }
-
 }
