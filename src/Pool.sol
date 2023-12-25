@@ -7,7 +7,9 @@ import "./Math.sol";
 
 import "forge-std/Test.sol";
 
+// TODO: gas and price compare with curve v1
 // TODO: vyper
+// TODO: dynamic fee
 contract Pool is ERC20 {
     struct Weight {
         uint64 w0;
@@ -33,7 +35,6 @@ contract Pool is ERC20 {
     bool private locked;
     Weight public weight;
     Balances private balances;
-    // TODO: dynamic fee
     uint256 public fee;
 
     modifier lock() {
@@ -150,14 +151,12 @@ contract Pool is ERC20 {
         // Old balances
         (uint256 b0, uint256 b1) = get_balances();
         // New balances
-        uint256 c0 = b0;
-        uint256 c1 = b1;
+        uint256 c0 = b0 + d0;
+        uint256 c1 = b1 + d1;
 
         uint256 v20 = Math.calc_v2(b0 * n0, b1 * n1, w, dw);
-        c0 += d0;
-        c1 += d1;
         uint256 v21 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
-        require(v21 >= v20, "v21 < v20");
+        require(v21 >= v20, "v2");
 
         // TODO: imbalance fee?
         // w = 0 -> xy = v^2
@@ -169,7 +168,8 @@ contract Pool is ERC20 {
             // TODO: require v0 > 0?
             fee0 = Math.abs_diff(c0, b0 * v1 / v0) * fee / MAX_FEE;
             fee1 = Math.abs_diff(c1, b1 * v1 / v0) * fee / MAX_FEE;
-            uint256 v22 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
+            uint256 v22 =
+                Math.calc_v2((c0 - fee0) * n0, (c1 - fee1) * n1, w, dw);
             uint256 v2 = Math.sqrt(v22);
             // TODO: invariant test v1 >= v0
             // TODO: invariant test v0 > 0
@@ -198,7 +198,6 @@ contract Pool is ERC20 {
         address dst
     ) external lock returns (uint256 d0, uint256 d1) {
         // TODO: input validation
-        // TODO: use token balance?
         (uint256 b0, uint256 b1) = get_balances();
         uint256 s = totalSupply;
 
@@ -244,7 +243,7 @@ contract Pool is ERC20 {
             c1 += d_in;
         }
         uint256 v21 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
-        require(v21 >= v20, "v");
+        require(v21 >= v20, "v2");
 
         _set_balances(c0, c1);
 
@@ -257,5 +256,17 @@ contract Pool is ERC20 {
         }
 
         return (d_out, f);
+    }
+
+    function skim() external auth {
+        (uint256 b0, uint256 b1) = get_balances();
+        uint256 bal0 = _bal0();
+        uint256 bal1 = _bal1();
+        if (bal0 > b0) {
+            IERC20(coin0).transfer(msg.sender, bal0 - b0);
+        }
+        if (bal1 > b1) {
+            IERC20(coin1).transfer(msg.sender, bal1 - b1);
+        }
     }
 }

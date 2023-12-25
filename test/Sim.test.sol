@@ -7,6 +7,8 @@ import {Pool} from "../src/Pool.sol";
 import {Aux} from "../src/Aux.sol";
 import {Coin} from "./Coin.sol";
 
+// TODO: sim add liq, swaps, remove liq
+// TODO: invariant tests
 contract SimTest is Test {
     Pool private pool;
     Aux private aux;
@@ -47,7 +49,7 @@ contract SimTest is Test {
         bool zero_for_one;
     }
 
-    function test() public {
+    function test_sim() public {
         string memory root = vm.projectRoot();
         string memory in_path = string.concat(root, "/tmp/data.json");
         string memory json = vm.readFile(in_path);
@@ -69,12 +71,12 @@ contract SimTest is Test {
             (uint256 out, uint256 fee) =
                 aux.swap(data[i].d_in, 0, data[i].zero_for_one);
 
-            if (data[i].zero_for_one) {
-                coin1.mint(address(this), fee);
-            } else {
-                coin0.mint(address(this), fee);
-            }
-            aux.swap(out + fee, 0, !data[i].zero_for_one);
+            // if (data[i].zero_for_one) {
+            //     coin1.mint(address(this), fee);
+            // } else {
+            //     coin0.mint(address(this), fee);
+            // }
+            // aux.swap(out + fee, 0, !data[i].zero_for_one);
 
             (uint256 b0, uint256 b1) = pool.get_balances();
             console.log("PY_LOG", b0, b1);
@@ -85,6 +87,6 @@ contract SimTest is Test {
         // console.log("remove", d0, d1);
         (uint256 out, uint256 fee) =
             aux.remove_liquidity_one_coin(lp / 10, 0, true);
-        console.log("remove", out, fee);
     }
+    // console.log("remove", out, fee);
 }

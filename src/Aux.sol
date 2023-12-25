@@ -6,7 +6,6 @@ import {IERC20} from "./interfaces/IERC20.sol";
 import "./Math.sol";
 
 import "forge-std/Test.sol";
-// TODO: gas and price compare with curve v1
 
 contract Aux {
     address public immutable pool;
