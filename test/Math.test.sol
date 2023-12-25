@@ -145,7 +145,17 @@ contract MathTest is Test {
     }
 
     function test_f() public {
-        uint256[3][1] memory tests = [[uint256(0), 0, 0]];
+        uint256[3][8] memory tests = [
+            // x, y, w
+            [uint256(0), 0, 0],
+            [M, M, 0],
+            [M, M, W],
+            [M, M, 0.1 * 1e5],
+            [M, M, 0.2 * 1e5],
+            [M, M, 0.5 * 1e5],
+            [M, M, 0.8 * 1e5],
+            [M, M, 0.9 * 1e5]
+        ];
 
         for (uint256 i = 0; i < tests.length; i++) {
             uint256 x = tests[i][0];
@@ -160,8 +170,15 @@ contract MathTest is Test {
         }
     }
 
-    function test_f_fuzz() public {
-        //
+    function test_f_fuzz(uint256 x, uint256 y, uint256 w) public {
+        x = bound(x, 0, M);
+        y = bound(y, 0, M);
+        w = bound(w, 0, W);
+        uint256 dw = W - w;
+        uint256 v2 = Math.calc_v2(x, y, w, dw);
+        assertEq(
+            Math.f(int256(x), int256(y), int256(w), int256(dw), int256(v2)), 0
+        );
     }
 
     function test_calc_y() public {
