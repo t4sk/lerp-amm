@@ -5,9 +5,76 @@ import "forge-std/Test.sol";
 import "../src/Math.sol";
 
 contract MathTest is Test {
-    // TODO: test f
-    // TODO: test v2
-    // TODO: test calc y
+    uint256 constant M = 2 ** 100;
+
+    function test_max_uint(uint256 x, uint256 y) public {
+        assertEq(Math.max_uint(x, y), x >= y ? x : y);
+    }
+
+    function test_max_int(int256 x, int256 y) public {
+        assertEq(Math.max_int(x, y), x >= y ? x : y);
+    }
+
+    function test_abs_uint(uint256 x, uint256 y) public {
+        assertEq(Math.abs_uint(x, y), x >= y ? x - y : y - x);
+    }
+
+    function test_abs_int(int256 x) public {
+        x = bound(x, type(int256).min + 1, type(int256).max);
+        assertEq(Math.abs_int(x), x >= 0 ? uint256(x) : uint256(-x));
+    }
+
+    function test_lerp_w() public {
+        uint256[6][6] memory tests = [
+            // w0, w1, t0, t1, t, expected w
+            // w0 < w1
+            [0, MAX_W, 0, 100, 0, 0],
+            [0, MAX_W, 0, 100, 50, MAX_W / 2],
+            [0, MAX_W, 0, 100, 100, MAX_W],
+            // w1 < w0
+            [MAX_W, 0, 0, 100, 0, MAX_W],
+            [MAX_W, 0, 0, 100, 50, MAX_W / 2],
+            [MAX_W, 0, 0, 100, 100, 0]
+        ];
+
+        for (uint256 i = 0; i < tests.length; i++) {
+            uint256 w0 = tests[i][0];
+            uint256 w1 = tests[i][1];
+            uint256 t0 = tests[i][2];
+            uint256 t1 = tests[i][3];
+            uint256 t = tests[i][4];
+            uint256 w = tests[i][5];
+            assertEq(Math.lerp_w(w0, w1, t0, t1, t), w);
+        }
+    }
+
+    function test_lerp_w_fuzz(
+        uint256 w0,
+        uint256 w1,
+        uint256 t0,
+        uint256 t1,
+        uint256 t
+    ) public {
+        w0 = bound(w0, 0, MAX_W);
+        w1 = bound(w1, 0, MAX_W);
+        t0 = bound(t0, 0, type(uint32).max);
+        t1 = bound(t1, 0, type(uint32).max);
+        if (t0 > t1) {
+            (t0, t1) = (t1, t0);
+        }
+        t = bound(t, t0, t1);
+
+        uint256 w = Math.lerp_w(w0, w1, t0, t1, t);
+        assertGe(w, 0);
+        assertLe(w, MAX_W);
+        if (w0 <= w1) {
+            assertGe(w, w0);
+            assertLe(w, w1);
+        } else {
+            assertLe(w, w0);
+            assertGe(w, w1);
+        }
+    }
 
     function test_v2_f_fuzz(uint256 x, uint256 y, uint256 w) public {
         x = bound(x, 1e6, 1e32);
@@ -20,6 +87,61 @@ contract MathTest is Test {
             Math.f(int256(x), int256(y), int256(w), int256(dw), int256(v2));
 
         assertEq(f, 0);
+    }
+
+    function test_calc_v2() public {
+        uint256[4][16] memory tests = [
+            // x, y, w, v2
+            [U, U, 0, U * U],
+            [M, M, 0, M * M],
+            [U, U, MAX_W, (U + U) ** 2 / 4],
+            [M, M, MAX_W, (M + M) ** 2 / 4],
+            [U, U, 0.1 * 1e5, (U + U) ** 2 / 4],
+            [M, M, 0.1 * 1e5, (M + M) ** 2 / 4],
+            [U, U, 0.2 * 1e5, (U + U) ** 2 / 4],
+            [M, M, 0.2 * 1e5, (M + M) ** 2 / 4],
+            [U, U, 0.5 * 1e5, (U + U) ** 2 / 4],
+            [M, M, 0.5 * 1e5, (M + M) ** 2 / 4],
+            [M, 0, 0.5 * 1e5, 0],
+            [0, M, 0.5 * 1e5, 0],
+            [U, U, 0.8 * 1e5, (U + U) ** 2 / 4],
+            [M, M, 0.8 * 1e5, (M + M) ** 2 / 4],
+            [U, U, 0.9 * 1e5, (U + U) ** 2 / 4],
+            [M, M, 0.9 * 1e5, (M + M) ** 2 / 4]
+        ];
+
+        for (uint256 i = 0; i < tests.length; i++) {
+            uint256 x = tests[i][0];
+            uint256 y = tests[i][1];
+            uint256 w = tests[i][2];
+            uint256 v2 = tests[i][3];
+            uint256 dw = MAX_W - w;
+            assertEq(Math.calc_v2(x, y, w, dw), v2);
+        }
+    }
+
+    function test_calc_v2_fuzz(uint256 x, uint256 y, uint256 w) public {
+        x = bound(x, 0, M);
+        y = bound(y, 0, M);
+        w = bound(w, 0, MAX_W);
+        uint256 dw = MAX_W - w;
+
+        uint256 v2 = Math.calc_v2(x, y, w, dw);
+
+        if (w == 0) {
+            assertEq(v2, x * y);
+        } else if (w == MAX_W) {
+            assertEq(v2, (x + y) ** 2 / 4);
+        } else {
+            if (x == 0 || y == 0) {
+                assertEq(v2, 0);
+            } else {
+                uint256 min = Math.min_uint(x, y);
+                uint256 max = Math.max_uint(x, y);
+                assertGe(v2, (min + min) ** 2 / 4);
+                assertLe(v2, (max + max) ** 2 / 4);
+            }
+        }
     }
 
     function test_calc_y() public {

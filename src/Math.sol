@@ -159,12 +159,12 @@ library Math {
         z = x >= y ? x : y;
     }
 
-    function abs_int(int256 x) internal pure returns (uint256) {
-        return x >= 0 ? uint256(x) : uint256(-x);
-    }
-
     function abs_uint(uint256 x, uint256 y) internal pure returns (uint256) {
         return x >= y ? x - y : y - x;
+    }
+
+    function abs_int(int256 x) internal pure returns (uint256) {
+        return x >= 0 ? uint256(x) : uint256(-x);
     }
 
     function lerp_w(uint256 w0, uint256 w1, uint256 t0, uint256 t1, uint256 t)
@@ -192,26 +192,22 @@ library Math {
         pure
         returns (uint256 v2)
     {
-        if (x == 0 && y == 0) {
-            return 0;
-        }
         if (w == 0) {
             return x * y;
         }
         if (w == MAX_W) {
             return (x + y) ** 2 / 4;
         }
-
+        // v2 = p*(dw + 4*w)*s2 / (dw*s2 + 16*w*p)
+        if (x == 0 || y == 0) {
+            return 0;
+        }
         uint256 p = x * y;
         uint256 s2 = (x + y) ** 2;
-        // v2 = p*(dw + 4*w)*s2 / (dw*s2 + 16*w*p)
         // MAX_W * U^2
         v2 = mul_div(p * (dw + 4 * w), s2, dw * s2 + 16 * w * p);
     }
 
-    // xy((1-w) + 4w)(x+y)^2 = v^2((1-w)(x+y)^2 + 4w4xy)
-    // w = 0 -> xy = v^2
-    // w = 1 -> (x+y)^2 = (2v)^2
     function f(int256 x, int256 y, int256 w, int256 dw, int256 v2)
         internal
         pure
@@ -235,9 +231,6 @@ library Math {
     // Secant method
     // x = token in
     // y = token out
-    // xy((1-w) + 4w)(x+y)^2 = v^2((1-w)(x+y)^2 + 4w4xy)
-    // w = 0 -> xy = v^2
-    // w = 1 -> (x+y)^2 = (2v)^2
     function calc_y(
         int256 x,
         int256 y0,
