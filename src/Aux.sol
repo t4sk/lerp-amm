@@ -5,8 +5,6 @@ import {IPool} from "./interfaces/IPool.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import "./Math.sol";
 
-import "forge-std/Test.sol";
-
 contract Aux {
     address public immutable pool;
     address public immutable coin0;

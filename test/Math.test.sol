@@ -193,7 +193,7 @@ contract MathTest is Test {
             [M, M, W, 100 * 1e18]
         ];
 
-        for (uint i = 0; i < tests.length; i++) {
+        for (uint256 i = 0; i < tests.length; i++) {
             uint256 x = tests[i][0];
             uint256 y0 = tests[i][1];
             uint256 w = tests[i][2];

@@ -2,14 +2,11 @@
 pragma solidity 0.8.20;
 
 import "./interfaces/IERC20.sol";
-import "./ERC20.sol";
+import "./lib/ERC20.sol";
 import "./Math.sol";
-
-import "forge-std/Test.sol";
 
 // TODO: gas and price compare with curve v1
 // TODO: vyper
-// TODO: dynamic fee
 contract Pool is ERC20 {
     struct Weight {
         uint64 w0;
@@ -145,7 +142,9 @@ contract Pool is ERC20 {
         lock
         returns (uint256 lp, uint256 fee0, uint256 fee1)
     {
-        // TODO: input validation
+        require(d0 > 0 || d1 > 0, "d0 = 0 and d1 = 0");
+        require(dst != address(0), "dst = 0 address");
+
         uint256 w = get_w();
         uint256 dw = W - w;
         // Old balances
@@ -158,21 +157,16 @@ contract Pool is ERC20 {
         uint256 v21 = Math.calc_v2(c0 * n0, c1 * n1, w, dw);
         require(v21 >= v20, "v2");
 
-        // TODO: imbalance fee?
-        // w = 0 -> xy = v^2
-        // w = 1 -> (x+y)^2 = (2v)^2
         uint256 s = totalSupply;
         uint256 v0 = Math.sqrt(v20);
         uint256 v1 = Math.sqrt(v21);
-        if (s > 0) {
-            // TODO: require v0 > 0?
+        if (v0 > 0) {
             fee0 = Math.abs_uint(c0, b0 * v1 / v0) * fee / F;
             fee1 = Math.abs_uint(c1, b1 * v1 / v0) * fee / F;
             uint256 v22 =
                 Math.calc_v2((c0 - fee0) * n0, (c1 - fee1) * n1, w, dw);
             uint256 v2 = Math.sqrt(v22);
-            // TODO: invariant test v1 >= v0
-            // TODO: invariant test v0 > 0
+            // TODO: if v2 > 1e18 and v0 = 1?
             lp = s * (v2 - v0) / v0;
         } else {
             lp = v1;
@@ -197,7 +191,9 @@ contract Pool is ERC20 {
         uint256 min1,
         address dst
     ) external lock returns (uint256 d0, uint256 d1) {
-        // TODO: input validation
+        require(lp > 0, "lp = 0");
+        require(dst != address(0), "dst = 0 address");
+
         (uint256 b0, uint256 b1) = get_balances();
         uint256 s = totalSupply;
 
@@ -223,8 +219,9 @@ contract Pool is ERC20 {
         lock
         returns (uint256, uint256)
     {
+        require(d_in > 0, "d_in = 0");
         require(dst != address(0), "dst = 0 address");
-        // TODO: input validation
+
         uint256 w = get_w();
         uint256 dw = W - w;
 
@@ -248,10 +245,10 @@ contract Pool is ERC20 {
         _set_balances(c0, c1);
 
         if (zero_for_one) {
-            require(_bal0() - b0 >= d_in, "bal 0");
+            require(_bal0() - b0 >= d_in, "d_in");
             IERC20(coin1).transfer(dst, d_out);
         } else {
-            require(_bal1() - b1 >= d_in, "bal 1");
+            require(_bal1() - b1 >= d_in, "d_in");
             IERC20(coin0).transfer(dst, d_out);
         }
 
