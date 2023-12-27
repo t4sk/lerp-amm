@@ -5,6 +5,7 @@ import "./interfaces/IERC20.sol";
 import "./lib/ERC20.sol";
 import "./Math.sol";
 
+// TODO: ema price
 // TODO: gas and price compare with curve v1
 // TODO: vyper
 contract Pool is ERC20 {

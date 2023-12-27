@@ -27,8 +27,6 @@ contract Aux {
         uint256 min_out,
         bool zero_for_one
     ) private returns (uint256 out, uint256 fee) {
-        // TODO: require(min_out > 0, "min out = 0");
-
         (uint256 b0, uint256 b1) = IPool(pool).get_balances();
         uint256 w = IPool(pool).get_w();
         uint256 dw = W - w;
