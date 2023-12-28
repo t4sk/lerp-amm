@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import "./interfaces/IERC20.sol";
+import "./interfaces/IHook.sol";
 import "./lib/ERC20.sol";
 import "./Math.sol";
 
@@ -34,6 +35,7 @@ contract Pool is ERC20 {
     Weight public weight;
     Balances private balances;
     uint256 public fee;
+    address public hook;
 
     modifier lock() {
         require(!locked, "locked");
@@ -79,6 +81,10 @@ contract Pool is ERC20 {
     function set_fee(uint256 f) external auth {
         require(f <= F, "fee > max");
         fee = f;
+    }
+
+    function set_hook(address _hook) external auth {
+        hook = _hook;
     }
 
     function set_w(uint64 w1, uint32 w1_time) external auth {
@@ -168,6 +174,7 @@ contract Pool is ERC20 {
                 Math.calc_v2((c0 - fee0) * n0, (c1 - fee1) * n1, w, dw);
             uint256 v2 = Math.sqrt(v22);
             // TODO: if v2 > 1e18 and v0 = 1?
+            // require v1 >= min_v1 when v0 = 0?
             lp = s * (v2 - v0) / v0;
         } else {
             lp = v1;
@@ -251,6 +258,11 @@ contract Pool is ERC20 {
         } else {
             require(_bal1() - b1 >= d_in, "d_in");
             IERC20(coin0).transfer(dst, d_out);
+        }
+
+        address h = hook;
+        if (h != address(0)) {
+            IHook(h).after_swap(d_in, d_out, fee, zero_for_one);
         }
 
         return (d_out, f);

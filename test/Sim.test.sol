@@ -41,7 +41,6 @@ contract SimTest is Test {
         coin1.approve(address(aux), type(uint256).max);
 
         pool.approve(address(aux), type(uint256).max);
-
     }
 
     struct SwapIn {

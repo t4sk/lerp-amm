@@ -15,6 +15,8 @@ interface IERC20 {
         returns (bool);
 
     // IERC20 metadata
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
     function decimals() external view returns (uint8);
 
     event Transfer(address indexed src, address indexed dst, uint256 value);
