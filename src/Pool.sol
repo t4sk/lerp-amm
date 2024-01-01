@@ -262,7 +262,7 @@ contract Pool is ERC20 {
 
         address h = hook;
         if (h != address(0)) {
-            IHook(h).after_swap(d_in, d_out, fee, zero_for_one);
+            IHook(h).after_swap(d_in, d_out, fee, zero_for_one, v21, c0, c1);
         }
 
         return (d_out, f);
