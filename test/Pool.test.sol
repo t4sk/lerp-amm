@@ -113,7 +113,7 @@ contract PoolInvariantTest is Test {
         coin1 = new Coin("coin 1", "COIN1", 6);
 
         pool = new Pool(
-            0.9 * 1e5,
+            0.8 * 1e5,
             1 * 0.001 * 1e18,
             address(coin0),
             address(coin1),
@@ -157,3 +157,5 @@ contract PoolInvariantTest is Test {
         }
     }
 }
+
+// TODO: pool unit tests

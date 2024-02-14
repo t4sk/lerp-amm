@@ -18,10 +18,11 @@ contract Hook {
     address public owner;
     uint256 public half_life;
     // EMA of x1 / x0
-    uint256 public last_ema;
+    // ray
+    uint256 public last_price;
+    // ray
     uint256 public ema;
     uint256 public updated_at;
-    uint256 public last_price;
 
     modifier auth() {
         require(msg.sender == owner, "not authorized");
@@ -39,10 +40,9 @@ contract Hook {
         coin1 = IPool(pool).coin1();
         n0 = IPool(pool).n0();
         n1 = IPool(pool).n1();
-        half_life = 3600;
-        ema = R;
-        last_ema = R;
-        last_price = R;
+        half_life = 300;
+        last_price = 0;
+        ema = 0;
         updated_at = block.timestamp;
     }
 
@@ -57,35 +57,58 @@ contract Hook {
     }
 
     function alpha(uint256 t0, uint256 t1) public view returns (uint256) {
+        if (t0 == t1) {
+            return 0;
+        }
         // TODO: scale up dt / half_life?
-        return A - Math.rpow(H, (t1 - t0) / half_life, R) / 1e9;
+        return A - (Math.rpow(H, (t1 - t0) / half_life, R) / 1e9);
     }
 
     function get_ema() public view returns (uint256 p, uint256 t) {
         t = updated_at;
         uint256 a = alpha(t, block.timestamp);
-        p = (last_price * a + (A - a) * last_ema) / A;
+        p = (last_price * a + (A - a) * ema) / A;
     }
+
+    // TODO: net x1 / net x0 = price?
+    int256 public net0;
+    int256 public net1;
 
     function after_swap(
         uint256 d_in,
         uint256 d_out,
         uint256 fee,
-        bool zero_for_one
+        bool zero_for_one,
+        uint256 v2,
+        uint256 b0,
+        uint256 b1
     ) external only_pool {
         // TODO: fee = 0 ?
         fee = 0;
-        uint256 a = alpha(updated_at, block.timestamp);
-        // p = x1 / x0
-        uint256 p = 0;
-        if (zero_for_one) {
-            p = (d_out + fee) * n1 * R / (d_in * n0);
-        } else {
-            p = (d_in * n0 * R) / ((d_out + fee) * n1);
+
+        uint256 t0 = updated_at;
+        if (t0 != block.timestamp) {
+            net0 = 0;
+            net1 = 0;
+            updated_at = block.timestamp;
         }
-        last_ema = ema;
-        last_price = p;
-        ema = (p * a + (A - a) * ema) / A;
-        updated_at = block.timestamp;
+
+        if (zero_for_one) {
+            net0 += d_in;
+            net1 -= (d_out + fee);
+        } else {
+            net0 -= (d_out + fee);
+            net1 += d_in;
+        }
+
+        if (net0 != 0) {
+            uint256 p = net1 * n1 * R / (net0 * n0);
+            // TODO: correct?
+            if (t0 != block.timestamp) {
+                uint256 a = alpha(t0, block.timestamp);
+                ema = (p * a + (A - a) * ema) / A;
+            }
+            last_price = p;
+        }
     }
 }
