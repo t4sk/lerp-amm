@@ -86,29 +86,29 @@ contract Hook {
         // TODO: fee = 0 ?
         fee = 0;
 
-        uint256 t0 = updated_at;
-        if (t0 != block.timestamp) {
-            net0 = 0;
-            net1 = 0;
-            updated_at = block.timestamp;
-        }
+        // uint256 t0 = updated_at;
+        // if (t0 != block.timestamp) {
+        //     net0 = 0;
+        //     net1 = 0;
+        //     updated_at = block.timestamp;
+        // }
 
-        if (zero_for_one) {
-            net0 += d_in;
-            net1 -= (d_out + fee);
-        } else {
-            net0 -= (d_out + fee);
-            net1 += d_in;
-        }
+        // if (zero_for_one) {
+        //     net0 += d_in;
+        //     net1 -= (d_out + fee);
+        // } else {
+        //     net0 -= (d_out + fee);
+        //     net1 += d_in;
+        // }
 
-        if (net0 != 0) {
-            uint256 p = net1 * n1 * R / (net0 * n0);
-            // TODO: correct?
-            if (t0 != block.timestamp) {
-                uint256 a = alpha(t0, block.timestamp);
-                ema = (p * a + (A - a) * ema) / A;
-            }
-            last_price = p;
-        }
+        // if (net0 != 0) {
+        //     uint256 p = net1 * n1 * R / (net0 * n0);
+        //     // TODO: correct?
+        //     if (t0 != block.timestamp) {
+        //         uint256 a = alpha(t0, block.timestamp);
+        //         ema = (p * a + (A - a) * ema) / A;
+        //     }
+        //     last_price = p;
+        // }
     }
 }

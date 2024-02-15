@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import "forge-std/Test.sol";
-import "./lib/Vyper.sol";
+import {Vyper} from "../lib/Vyper.sol";
 
 // forge test --via-ir --ffi --match-path test/Vy.test.sol -vvvv --evm-version shanghai
 interface IMath {

@@ -24,7 +24,7 @@ contract Vyper is Test {
         ///@notice create a list of strings with the commands necessary to compile Vyper contracts
         string[] memory cmds = new string[](2);
         cmds[0] = "vyper";
-        cmds[1] = string.concat("vy/", fileName, ".vy");
+        cmds[1] = string.concat("src/vy/", fileName, ".vy");
 
         ///@notice compile the Vyper contract and return the bytecode
         bytes memory bytecode = vm.ffi(cmds);
@@ -53,7 +53,7 @@ contract Vyper is Test {
         ///@notice create a list of strings with the commands necessary to compile Vyper contracts
         string[] memory cmds = new string[](2);
         cmds[0] = "vyper";
-        cmds[1] = string.concat("vy/", fileName, ".vy");
+        cmds[1] = string.concat("src/vy/", fileName, ".vy");
 
         ///@notice compile the Vyper contract and return the bytecode
         bytes memory _bytecode = vm.ffi(cmds);

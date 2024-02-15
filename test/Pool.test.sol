@@ -126,10 +126,7 @@ contract PoolInvariantTest is Test {
         n1 = pool.n1();
 
         handler = new Handler(
-            address(pool),
-            address(aux),
-            address(coin0),
-            address(coin1)
+            address(pool), address(aux), address(coin0), address(coin1)
         );
 
         targetContract(address(handler));

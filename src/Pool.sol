@@ -6,7 +6,6 @@ import "./interfaces/IHook.sol";
 import "./lib/ERC20.sol";
 import "./Math.sol";
 
-// TODO: ema price
 // TODO: gas and price compare with curve v1
 // TODO: vyper
 contract Pool is ERC20 {
@@ -129,17 +128,15 @@ contract Pool is ERC20 {
     }
 
     function _bal0() private view returns (uint256) {
-        (bool ok, bytes memory data) = coin0.staticcall(
-            abi.encodeWithSelector(IERC20.balanceOf.selector, address(this))
-        );
+        (bool ok, bytes memory data) =
+            coin0.staticcall(abi.encodeCall(IERC20.balanceOf, (address(this))));
         require(ok && data.length >= 32, "balance 0 failed");
         return abi.decode(data, (uint256));
     }
 
     function _bal1() private view returns (uint256) {
-        (bool ok, bytes memory data) = coin1.staticcall(
-            abi.encodeWithSelector(IERC20.balanceOf.selector, address(this))
-        );
+        (bool ok, bytes memory data) =
+            coin1.staticcall(abi.encodeCall(IERC20.balanceOf, (address(this))));
         require(ok && data.length >= 32, "balance 1 failed");
         return abi.decode(data, (uint256));
     }
