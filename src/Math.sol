@@ -246,6 +246,7 @@ library Math {
         v2 = mul_div(p * (dw + 4 * w), s2, dw * s2 + 16 * w * p);
     }
 
+    // TODO: define f = f^2?
     function f(int256 x, int256 y, int256 w, int256 dw, int256 v2)
         internal
         pure
